@@ -86,12 +86,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 
 #byte.walking .byte-float{animation:byteSlideFloat 1s ease-in-out infinite;}
 #byte.turnL img,#byte.turnR img{--byteScale:.74;}
-#byte .byte-arm-cover{position:absolute;display:none;z-index:2;top:47%;width:13%;height:14%;
-  border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle at 40% 30%, #fff8df, #f0e1bd 66%, #d4ba86);
-  box-shadow:inset 0 2px 3px rgba(255,255,255,.75), 0 2px 4px rgba(0,0,0,.18);}
-#byte.reaching-left .byte-arm-cover{display:block;left:24%;}
-#byte.reaching-right .byte-arm-cover{display:block;right:24%;}
+/* Arm socket — a body-material disc that masks Byte's sprite hand and becomes the
+   shoulder the stretch arm grows from. Lives in the effect layer (screen space) so
+   it sits ABOVE the Byte sprite but BELOW the stretch arm, and tracks the scaled
+   sprite's hand exactly (positioned per-frame in JS, not by % of #byte). */
+.arm-socket{position:absolute;border-radius:50%;pointer-events:none;z-index:23;
+  transform:translate(-50%,-50%) scale(.8);opacity:0;
+  transition:transform .15s cubic-bezier(.34,1.5,.5,1), opacity .15s ease;
+  background:radial-gradient(circle at 40% 32%, #fffaf0, #f1e3c2 64%, #d9c399);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.8), inset 0 -2px 3px rgba(150,118,66,.3),
+             0 2px 5px rgba(0,0,0,.2);}
+.arm-socket.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
 #byte .byte-aura{position:absolute;inset:-22% -28%;border-radius:50%;
   background:radial-gradient(closest-side, rgba(90,200,255,.55), rgba(90,200,255,0) 70%);
@@ -106,45 +111,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes byteHappy{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-22%) scale(1.06)}100%{transform:translateY(0) scale(1)}}
 @keyframes auraPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.9}}
 
-/* ---------- Byte's robotic TELESCOPIC arm (rAF-driven, WALL-E style) ---------- */
-/* container is pinned at the shoulder and rotated toward the pod; children are
-   driven per-frame in JS. Segments taper thick→thin, the cyan hand leads the tip. */
-.byte-arm{--armH:clamp(18px,3.6vw,27px);
+/* ---------- Byte's stretchy cartoon arm (Baymax-style) ---------- */
+/* ONE continuous beige capsule pinned at the shoulder and rotated toward the pod.
+   JS sets width = full reach, then animates scaleX 0→1 (transform-origin: left),
+   so thickness stays constant and the hand leads out from the body. The hand and
+   shoulder joint counter-scale (--inv = 1/scaleX) so they never squash. */
+.byte-arm{--armH:clamp(12px,2vw,18px);
   position:absolute;height:var(--armH);width:0;
-  transform-origin:0 50%;z-index:24;pointer-events:none;}
-/* soft contact shadow that grows with the reach */
-.byte-arm .arm-shadow{position:absolute;left:0;top:64%;height:48%;width:0;z-index:0;
-  border-radius:999px;background:rgba(0,0,0,.22);filter:blur(4px);}
-/* telescoping segments — each slides out of the previous, thinner toward the hand */
-.byte-arm .segment{position:absolute;left:0;top:50%;width:0;transform:translateY(-50%);
-  transform-origin:0 50%;border-radius:999px;
-  background:linear-gradient(180deg,#fffaf0 0%,#fbf2d8 32%,#ead9b2 70%,#d4bd92 100%);
-  box-shadow:inset 0 2px 2px rgba(255,255,255,.9), inset 0 -2px 3px rgba(150,118,66,.4),
-             0 3px 5px rgba(0,0,0,.2);}
-/* glossy highlight running along the top of each segment */
-.byte-arm .segment::after{content:"";position:absolute;left:8%;right:9%;top:17%;height:26%;
-  border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0));}
-.byte-arm .seg1{height:var(--armH);            z-index:1;}
-.byte-arm .seg2{height:calc(var(--armH) * .80);z-index:2;}
-.byte-arm .seg3{height:calc(var(--armH) * .62);z-index:3;}
-/* cyan shoulder cuff where the arm leaves the body */
-.byte-arm .cuff{position:absolute;left:calc(var(--armH) * -0.40);top:50%;z-index:2;
-  width:calc(var(--armH) * 1.2);height:calc(var(--armH) * 1.2);border-radius:50%;
-  transform:translateY(-50%);
-  background:radial-gradient(circle at 40% 32%, #dcf7ff, #4ac9ef 58%, #1ea6cf);
-  box-shadow:inset 0 2px 3px rgba(255,255,255,.7), 0 2px 5px rgba(0,0,0,.28);}
-/* rounded cyan hand — rides the leading tip; JS sets its `left` each frame */
-.byte-arm .hand{position:absolute;left:0;top:50%;z-index:4;
-  width:calc(var(--armH) * 1.34);height:calc(var(--armH) * 1.34);border-radius:50%;
-  transform:translate(-50%,-50%) scale(var(--handScale,1));transform-origin:50% 50%;
-  transition:transform .14s cubic-bezier(.34,1.6,.5,1);
-  background:radial-gradient(circle at 36% 28%, #ecfcff, #38c8ef 54%, #149ccb);
-  box-shadow:0 0 0 3px rgba(255,255,255,.5), 0 3px 7px rgba(0,0,0,.34);}
-.byte-arm .hand::after{content:"";position:absolute;left:24%;top:18%;width:34%;height:30%;
-  border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0));}
-.byte-arm.grab .hand{--handScale:1.16;}
+  transform-origin:0 50%;border-radius:999px;z-index:24;pointer-events:none;
+  background:linear-gradient(180deg,#fffaf0 0%,#f7eccf 52%,#e7d4aa 100%);
+  box-shadow:0 3px 6px rgba(0,0,0,.24),
+             inset 0 2px 2px rgba(255,255,255,.9),
+             inset 0 -2px 3px rgba(150,118,66,.32);}
+/* small cyan shoulder joint where the arm meets the body */
+.byte-arm::before{content:"";position:absolute;left:0;top:50%;
+  width:calc(var(--armH) * 1.3);height:calc(var(--armH) * 1.3);border-radius:50%;
+  transform:translate(-50%,-50%) scaleX(var(--inv,1));transform-origin:50% 50%;
+  background:radial-gradient(circle at 40% 32%, #dcf7ff, #4ac9ef 60%, #1ea6cf);
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.7), 0 2px 4px rgba(0,0,0,.24);}
+/* small rounded cyan hand at the tip (1.15× arm height) — leads the stretch */
+.byte-arm .claw{position:absolute;left:100%;top:50%;
+  width:calc(var(--armH) * 1.15);height:calc(var(--armH) * 1.15);border-radius:50%;
+  transform:translate(-50%,-50%) scaleX(var(--inv,1)) scale(var(--clawPop,1));
+  transform-origin:50% 50%;
+  background:radial-gradient(circle at 38% 30%, #ecfcff, #38c8ef 56%, #149ccb);
+  box-shadow:0 0 0 2px rgba(255,255,255,.5), 0 2px 5px rgba(0,0,0,.3);}
 
-/* anticipation: kill the idle breath so the squash/lean reads cleanly */
+/* anticipation: kill the idle breath so the wind-up reads cleanly */
 #byte.anticipate .byte-breath{animation:none;transition:transform .12s cubic-bezier(.3,.85,.4,1);}
 
 /* ============================================================
@@ -172,8 +165,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 .pod.glow .pod-img{animation:podBounce 2.4s ease-in-out infinite, podImageGlow 1.55s ease-in-out infinite;}
 .pod.open .pod-img{animation:podPop .55s cubic-bezier(.34,1.6,.5,1);}
 
-/* bunny that rises out of a wrong (empty) pod — sits IN the pod's opening */
-.pod .pod-bunny{position:absolute;left:50%;bottom:50%;width:108%;height:auto;z-index:3;
+/* bunny that rises out of a wrong (empty) pod — sits UPON the pod's opening.
+   Sized by pod HEIGHT (not width) so it stays the same size on every pod shape. */
+.pod .pod-bunny{position:absolute;left:50%;bottom:64%;width:auto;height:92%;z-index:3;
   transform-origin:50% 100%;transform:translate(-50%,55%) scale(.3);opacity:0;pointer-events:none;}
 .pod.bunny-out .pod-bunny{animation:bunnyRise .7s cubic-bezier(.34,1.6,.5,1) forwards;}
 @keyframes bunnyRise{0%{transform:translate(-50%,55%) scale(.35);opacity:0}
@@ -400,7 +394,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
         <div class="byte-aura"></div>
         <div class="byte-breath">
           <img src="assets/byte.png" alt="Byte the robot" draggable="false" />
-          <div class="byte-arm-cover"></div>
         </div>
       </div>
     </div>
@@ -456,6 +449,19 @@ const $  = (s, r=document) => r.querySelector(s);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const rand  = (a,b) => a + Math.random()*(b-a);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+/* CSS-style cubic-bezier(p1x,p1y,p2x,p2y) → easing function f(t∈[0,1]) (Newton-solved) */
+function cubicBezier(p1x, p1y, p2x, p2y){
+  const cx = 3*p1x, bx = 3*(p2x-p1x)-cx, ax = 1-cx-bx;
+  const cy = 3*p1y, by = 3*(p2y-p1y)-cy, ay = 1-cy-by;
+  const fx = t => ((ax*t+bx)*t+cx)*t;
+  const fy = t => ((ay*t+by)*t+cy)*t;
+  const dfx = t => (3*ax*t+2*bx)*t+cx;
+  return x => {
+    let t = x;
+    for (let i=0;i<6;i++){ const e = fx(t)-x, d = dfx(t); if (Math.abs(e)<1e-4||d===0) break; t -= e/d; }
+    return fy(clamp(t,0,1));
+  };
+}
 
 const stage = $('#stage');
 const board = $('#board');
@@ -653,7 +659,7 @@ const BYTE_SPRITES = {
 };
 class Byte {
   constructor(el, particles){
-    this.el = el; this.particles = particles; this.arm = null;
+    this.el = el; this.particles = particles; this.arm = null; this.socket = null;
     this.img = el.querySelector('img');
   }
   setTopPercent(p, immediate = false){
@@ -694,11 +700,10 @@ class Byte {
     this.el.style.transition = '';
   }
 
-  /** Deploy a telescopic robot arm toward target. Pierces a bush in the path.
-      Feel: anticipation squash → staggered segments extend → cyan hand leads the
-      tip along a tiny upward arc → settles with a small overshoot and a grab. */
+  /** Reach a smooth stretchy cartoon arm toward target. Pierces a bush in the path.
+      Feel: body winds up → one continuous beige capsule shoots out (scaleX 0→1,
+      hand leading) → tiny overshoot → settles. No segments, no rubber bulge. */
   async extendArm(targetEl, bush){
-    // shoulder origin uses the on-screen sprite box so the reach grows from Byte's body
     const s  = stage.getBoundingClientRect();
     const ir = this.img.getBoundingClientRect();
     const tgt = centerOf(targetEl);
@@ -706,104 +711,105 @@ class Byte {
     const dir = tgt.x < byteCx ? -1 : 1;
     this.el.classList.toggle('reaching-left', dir < 0);
     this.el.classList.toggle('reaching-right', dir > 0);
+
+    // 1,4) the arm grows from a SOCKET placed over Byte's sprite hand. The hand sits
+    // at the lower-left / lower-right of the (scaled) sprite box; the socket masks it
+    // and becomes the shoulder, so we never see the original hand AND the stretch arm.
     const shoulder = {
-      x: byteCx + dir * ir.width * 0.28,
-      y: ir.top - s.top + ir.height * 0.49,
+      x: ir.left - s.left + (dir > 0 ? 0.87 : 0.13) * ir.width,
+      y: ir.top  - s.top  + 0.78 * ir.height,
     };
+    const socket = document.createElement('div');
+    socket.className = 'arm-socket';
+    socket.style.width = socket.style.height = (ir.width * 0.40) + 'px';
+    socket.style.left = shoulder.x + 'px';
+    socket.style.top  = shoulder.y + 'px';
+    effectLayer.appendChild(socket);    // above Byte (layer z40), below the arm (z24 in-layer)
+    this.socket = socket;
+    // 3,5) reveal the socket (scale .8→1, 150ms) ~80ms before the arm shoots
+    requestAnimationFrame(() => socket.classList.add('show'));
+    await sleep(80);
+
     const dx = tgt.x - shoulder.x, dy = tgt.y - shoulder.y;
     const dist  = Math.hypot(dx, dy);
     const angle = Math.atan2(dy, dx);
 
-    // 1) ANTICIPATION (120ms): squash the body and lean away from the pod
+    // ANTICIPATION (120ms): wind up — lean away from the pod and stretch tall
     const breath = this.el.querySelector('.byte-breath');
     this.el.classList.add('anticipate');
-    breath.style.transform = `translateX(${-dir * 4}px) scale(1.06, .92)`;
+    breath.style.transform = `translateX(${-dir * 4}px) scale(.96, 1.04)`;
     await sleep(120);
-    breath.style.transform = '';
+    breath.style.transform = '';        // released as the arm shoots
     this.el.classList.remove('anticipate');
 
     return new Promise(resolve => {
-      playSound('arm');   // robotic "trrr" as the segments deploy
+      playSound('arm');
       const arm = document.createElement('div');
       arm.className = 'byte-arm';
-      arm.innerHTML =
-        '<div class="arm-shadow"></div><div class="cuff"></div>' +
-        '<div class="segment seg1"></div><div class="segment seg2"></div>' +
-        '<div class="segment seg3"></div><div class="hand"></div>';
+      arm.innerHTML = '<div class="claw"></div>';
       arm.style.left = shoulder.x + 'px';
       arm.style.top  = shoulder.y + 'px';
-      arm.style.transform = `rotate(${angle}rad)`;
-      effectLayer.appendChild(arm);      // screen-space layer
+      // 2) created at FINAL width; we only animate scaleX so thickness stays constant
+      arm.style.width = dist + 'px';
+      arm.style.transform = `rotate(${angle}rad) scaleX(0)`;
+      arm.style.setProperty('--inv', '6');   // counter-scale the hand/joint at sx≈0
+      effectLayer.appendChild(arm);          // screen-space layer
       this.arm = arm;
-      const seg1 = arm.querySelector('.seg1'), seg2 = arm.querySelector('.seg2'),
-            seg3 = arm.querySelector('.seg3'), hand = arm.querySelector('.hand'),
-            shadow = arm.querySelector('.arm-shadow');
 
-      let bushDist = Infinity, leafDone = false;
+      // bush is hit at a fraction of the full reach
+      let bushFrac = Infinity, leafDone = false;
       if (bush){
         const bc = centerOf(bush.el);
-        bushDist = Math.hypot(bc.x - shoulder.x, bc.y - shoulder.y) * 0.9;
+        bushFrac = (Math.hypot(bc.x - shoulder.x, bc.y - shoulder.y) / dist) * 0.9;
       }
 
-      // 5) easeOutCubic — no elastic, no rubber wobble
-      const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
-      const seg = (ms, a, b) => easeOutCubic(clamp((ms - a) / (b - a), 0, 1));
-      const DUR = 600, start = performance.now();   // 2) total extension ~600ms
-      let grabbed = false;
+      // 3,6) fast-out / slow-in stretch — cubic-bezier(.22,1,.36,1), no bounce
+      const ease = cubicBezier(0.22, 1, 0.36, 1);
+      const DUR = 550, start = performance.now();
       const step = (now) => {
-        const ms = now - start, t = clamp(ms / DUR, 0, 1);
-        // 2) staggered telescopic deploy: seg1 0-200, seg2 120-350, seg3 250-550
-        seg1.style.width = (dist * 0.42 * seg(ms,   0, 200)) + 'px';
-        seg2.style.width = (dist * 0.74 * seg(ms, 120, 350)) + 'px';
-        const p3 = seg(ms, 250, 550);
-        // 3) the hand leads the tip; 5) tiny overshoot (scaleX 1.03) in the final 10%
-        let reach = dist * p3;
-        if (t > 0.9){ const k = (t - 0.9) / 0.1; reach = dist * (1 + 0.03 * Math.sin(Math.PI * k)); }
-        seg3.style.width = reach + 'px';
-        hand.style.left  = reach + 'px';
-        shadow.style.width = reach + 'px';
-        // 4) tiny natural arc (0 → -8px → 0), perpendicular to the reach
-        const arc = -8 * Math.sin(Math.PI * t);
-        arm.style.transform = `translate(0, ${arc}px) rotate(${angle}rad)`;
-        if (!leafDone && bush && reach >= bushDist){
+        const t = clamp((now - start) / DUR, 0, 1);
+        let sx = ease(t);
+        // 7) subtle overshoot in the last 10%: scaleX 1 → 1.025 → 1
+        if (t > 0.9){ const k = (t - 0.9) / 0.1; sx = 1 + 0.025 * Math.sin(Math.PI * k); }
+        arm.style.transform = `rotate(${angle}rad) scaleX(${sx})`;
+        arm.style.setProperty('--inv', (1 / Math.max(sx, 0.16)).toFixed(3));
+        if (!leafDone && bush && sx >= bushFrac){
           leafDone = true; bush.rustle();
           const bc = centerOf(bush.el);
           this.particles.emit('leaf', bc.x, bc.y - bush.el.clientHeight*0.2, 14);
         }
-        if (!grabbed && p3 >= 0.8){ grabbed = true; arm.classList.add('grab'); } // hand clenches on contact
         if (t < 1) requestAnimationFrame(step);
-        else { arm.style.transform = `rotate(${angle}rad)`; resolve(); }          // settle flat
+        else { arm.style.transform = `rotate(${angle}rad) scaleX(1)`;
+               arm.style.setProperty('--inv', '1'); resolve(); }
       };
       requestAnimationFrame(step);
     });
   }
 
-  /** 7) Fast retraction (280ms): hand collapses first, segments fold in reverse. */
+  /** 8) Fast retraction (250ms): scaleX 1 → 0, the hand follows back to the body,
+      then the socket fades out (1→.8, 150ms) 100ms after the arm is gone. */
   retractArm(){
     return new Promise(resolve => {
+      // fade + remove the socket AFTER the stretch arm has disappeared
+      const fadeSocket = () => {
+        const sock = this.socket; this.socket = null;
+        if (sock){ sock.classList.remove('show'); setTimeout(() => sock.remove(), 170); }
+      };
       const arm = this.arm;
-      if (!arm){ this.el.classList.remove('reaching-left','reaching-right'); resolve(); return; }
-      arm.classList.remove('grab');
-      const seg1 = arm.querySelector('.seg1'), seg2 = arm.querySelector('.seg2'),
-            seg3 = arm.querySelector('.seg3'), hand = arm.querySelector('.hand'),
-            shadow = arm.querySelector('.arm-shadow');
-      const w1 = parseFloat(seg1.style.width) || 0, w2 = parseFloat(seg2.style.width) || 0,
-            w3 = parseFloat(seg3.style.width) || 0;
-      const easeInCubic = t => t * t * t;
-      const DUR = 280, start = performance.now();
+      if (!arm){ this.el.classList.remove('reaching-left','reaching-right');
+                 setTimeout(fadeSocket, 100); resolve(); return; }
+      const angle = (arm.style.transform.match(/rotate\(([-\d.]+)rad\)/) || [, '0'])[1];
+      const DUR = 250, start = performance.now();
       const step = now => {
         const t = clamp((now - start) / DUR, 0, 1);
-        const c3 = easeInCubic(clamp(t / 0.55, 0, 1));          // tip folds first
-        const c2 = easeInCubic(clamp((t - 0.2) / 0.55, 0, 1));
-        const c1 = easeInCubic(clamp((t - 0.4) / 0.6, 0, 1));   // base folds last
-        const nw3 = w3 * (1 - c3), nw2 = w2 * (1 - c2), nw1 = w1 * (1 - c1);
-        seg3.style.width = nw3 + 'px'; seg2.style.width = nw2 + 'px'; seg1.style.width = nw1 + 'px';
-        hand.style.left = nw3 + 'px';
-        shadow.style.width = Math.max(nw1, nw2, nw3) + 'px';
+        const sx = Math.max(0, 1 - t * t);   // ease-in collapse, hand pulls back first
+        arm.style.transform = `rotate(${angle}rad) scaleX(${sx})`;
+        arm.style.setProperty('--inv', (1 / Math.max(sx, 0.16)).toFixed(3));
         if (t < 1) requestAnimationFrame(step);
         else {
           arm.remove(); this.arm = null;
           this.el.classList.remove('reaching-left','reaching-right');
+          setTimeout(fadeSocket, 100);   // remove cover 100ms after retract completes
           resolve();
         }
       };
