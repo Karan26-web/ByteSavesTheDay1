@@ -992,7 +992,18 @@ class GameManager {
 window.addEventListener('load', () => {
   audio.init();
   const game = new GameManager();
-  setTimeout(() => game.start(), 250);
+  const startScreen = $('#startScreen');
+
+  // First tap unlocks the AudioContext (browser autoplay policy) AND kicks
+  // off Byte's entrance — so every movement sound is audible from the start.
+  const begin = () => {
+    startScreen.removeEventListener('click', begin);
+    audio.resume();
+    audio.play('coin');                 // tiny confirmation blip
+    startScreen.classList.add('hide');
+    game.start();
+  };
+  startScreen.addEventListener('click', begin);
 });
 </script>
 </body>
