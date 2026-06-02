@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Byte Saves The Day · Energy Farm</title>
+<!-- preload the stretch-arm asset so the first reach never flashes -->
+<link rel="preload" as="image" href="assets/ByteWithExtendedHand.svg" />
 <style>
 /* ============================================================
    BYTE SAVES THE DAY — ENERGY FARM
@@ -86,17 +88,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 
 #byte.walking .byte-float{animation:byteSlideFloat 1s ease-in-out infinite;}
 #byte.turnL img,#byte.turnR img{--byteScale:.74;}
-/* Arm socket — a body-material disc that masks Byte's sprite hand and becomes the
-   shoulder the stretch arm grows from. Lives in the effect layer (screen space) so
-   it sits ABOVE the Byte sprite but BELOW the stretch arm, and tracks the scaled
-   sprite's hand exactly (positioned per-frame in JS, not by % of #byte). */
-.arm-socket{position:absolute;border-radius:50%;pointer-events:none;z-index:23;
-  transform:translate(-50%,-50%) scale(.8);opacity:0;
-  transition:transform .15s cubic-bezier(.34,1.5,.5,1), opacity .15s ease;
-  background:radial-gradient(circle at 40% 32%, #fffaf0, #f1e3c2 64%, #d9c399);
-  box-shadow:inset 0 2px 3px rgba(255,255,255,.8), inset 0 -2px 3px rgba(150,118,66,.3),
-             0 2px 5px rgba(0,0,0,.2);}
-.arm-socket.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
 #byte .byte-aura{position:absolute;inset:-22% -28%;border-radius:50%;
   background:radial-gradient(closest-side, rgba(90,200,255,.55), rgba(90,200,255,0) 70%);
@@ -111,31 +102,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes byteHappy{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-22%) scale(1.06)}100%{transform:translateY(0) scale(1)}}
 @keyframes auraPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.9}}
 
-/* ---------- Byte's stretchy cartoon arm (Baymax-style) ---------- */
-/* ONE continuous beige capsule pinned at the shoulder and rotated toward the pod.
-   JS sets width = full reach, then animates scaleX 0→1 (transform-origin: left),
-   so thickness stays constant and the hand leads out from the body. The hand and
-   shoulder joint counter-scale (--inv = 1/scaleX) so they never squash. */
-.byte-arm{--armH:clamp(12px,2vw,18px);
-  position:absolute;height:var(--armH);width:0;
-  transform-origin:0 50%;border-radius:999px;z-index:24;pointer-events:none;
-  background:linear-gradient(180deg,#fffaf0 0%,#f7eccf 52%,#e7d4aa 100%);
-  box-shadow:0 3px 6px rgba(0,0,0,.24),
-             inset 0 2px 2px rgba(255,255,255,.9),
-             inset 0 -2px 3px rgba(150,118,66,.32);}
-/* small cyan shoulder joint where the arm meets the body */
-.byte-arm::before{content:"";position:absolute;left:0;top:50%;
-  width:calc(var(--armH) * 1.3);height:calc(var(--armH) * 1.3);border-radius:50%;
-  transform:translate(-50%,-50%) scaleX(var(--inv,1));transform-origin:50% 50%;
-  background:radial-gradient(circle at 40% 32%, #dcf7ff, #4ac9ef 60%, #1ea6cf);
-  box-shadow:inset 0 1px 2px rgba(255,255,255,.7), 0 2px 4px rgba(0,0,0,.24);}
-/* small rounded cyan hand at the tip (1.15× arm height) — leads the stretch */
-.byte-arm .claw{position:absolute;left:100%;top:50%;
-  width:calc(var(--armH) * 1.15);height:calc(var(--armH) * 1.15);border-radius:50%;
-  transform:translate(-50%,-50%) scaleX(var(--inv,1)) scale(var(--clawPop,1));
-  transform-origin:50% 50%;
-  background:radial-gradient(circle at 38% 30%, #ecfcff, #38c8ef 56%, #149ccb);
-  box-shadow:0 0 0 2px rgba(255,255,255,.5), 0 2px 5px rgba(0,0,0,.3);}
+/* ---------- Byte's stretchy arm — 9-slice of ByteWithExtendedHand.svg ----------
+   The original artist asset is sliced into three side-by-side panels, each
+   painting the SAME SVG as a background at different positions:
+     .stretch-body  → left   slice (Byte + shoulder)  — fixed width, pixel-perfect
+     .stretch-middle→ center band of the tube         — ONLY this width animates
+     .stretch-cap   → right  slice (rounded end+hand) — fixed width, pixel-perfect
+   The whole container is positioned at the shoulder and rotated/mirrored to aim
+   at the pod. Body and cap never scale, so they never deform — it reads as Byte's
+   own arm magically stretching from his shoulder. */
+.byte-stretch{position:absolute;display:flex;align-items:center;z-index:24;
+  pointer-events:none;will-change:transform;
+  filter:drop-shadow(0 7px 9px rgba(0,0,0,.26));}
+.byte-stretch .stretch-body,
+.byte-stretch .stretch-middle,
+.byte-stretch .stretch-cap{height:100%;flex:none;
+  background-image:url("assets/ByteWithExtendedHand.svg");
+  background-repeat:no-repeat;}
+/* body + cap: full-height render of the SVG, just windowed left / right */
+.byte-stretch .stretch-body{background-position:left center;background-size:auto 100%;}
+.byte-stretch .stretch-cap {background-position:right center;background-size:auto 100%;}
+/* middle: background-size + position are recomputed per-frame in JS (sliceMiddle) */
+.byte-stretch .stretch-middle{background-position:center;}
 
 /* anticipation: kill the idle breath so the wind-up reads cleanly */
 #byte.anticipate .byte-breath{animation:none;transition:transform .12s cubic-bezier(.3,.85,.4,1);}
@@ -476,6 +464,27 @@ function centerOf(el){
 }
 
 /* ------------------------------------------------------------
+   9-SLICE for ByteWithExtendedHand.svg (viewBox 0 0 612 237)
+     body slice  : x[0,179]   (Byte + shoulder)
+     tube         : x[179,594] (uniform beige capsule — stretchable)
+     cap slice   : x[594,612] (rounded end + blue hand)
+   The middle div shows ONLY a uniform sub-band of the tube, scaled to
+   any width. Because the tube has a constant cross-section, scaling it
+   horizontally is invisible — no deformation of body or cap.
+   ------------------------------------------------------------ */
+const SVG_VB_W = 612, SVG_SAMPLE_A = 210, SVG_SAMPLE_B = 560;     // pure-tube band
+const SVG_SAMPLE_BAND = SVG_SAMPLE_B - SVG_SAMPLE_A;              // 350
+/** size the .stretch-middle background so [SAMPLE_A,SAMPLE_B] fills width `mw` */
+function sliceMiddle(el, mw){
+  const w = Math.max(0, mw);
+  const bgW = SVG_VB_W * w / SVG_SAMPLE_BAND;        // full-image width at this scale
+  const bgX = -(SVG_SAMPLE_A / SVG_VB_W) * bgW;      // align SAMPLE_A to the left edge
+  el.style.width = w.toFixed(2) + 'px';
+  el.style.backgroundSize = bgW.toFixed(2) + 'px 100%';
+  el.style.backgroundPosition = bgX.toFixed(2) + 'px center';
+}
+
+/* ------------------------------------------------------------
    PATH GEOMETRY (in BOARD %, matching Background.svg 1920x1080)
    The painted path runs down the centre; its 6 cells sit at these
    vertical centres. Byte now slides along the path instead of hopping.
@@ -659,7 +668,7 @@ const BYTE_SPRITES = {
 };
 class Byte {
   constructor(el, particles){
-    this.el = el; this.particles = particles; this.arm = null; this.socket = null;
+    this.el = el; this.particles = particles; this.stretch = null; this.stretchMiddle = null;
     this.img = el.querySelector('img');
   }
   setTopPercent(p, immediate = false){
@@ -700,118 +709,124 @@ class Byte {
     this.el.style.transition = '';
   }
 
-  /** Reach a smooth stretchy cartoon arm toward target. Pierces a bush in the path.
-      Feel: body winds up → one continuous beige capsule shoots out (scaleX 0→1,
-      hand leading) → tiny overshoot → settles. No segments, no rubber bulge. */
+  /** Reach toward target by stretching Byte's OWN arm — a 9-slice of the artist
+      asset ByteWithExtendedHand.svg. byte.png is hidden; a [body][tube][cap]
+      container takes its place. Only the tube's width animates, so the body and
+      blue hand stay pixel-perfect — it reads as Byte's arm magically extending. */
   async extendArm(targetEl, bush){
     const s  = stage.getBoundingClientRect();
     const ir = this.img.getBoundingClientRect();
     const tgt = centerOf(targetEl);
     const byteCx = ir.left - s.left + ir.width/2;
-    const dir = tgt.x < byteCx ? -1 : 1;
+    const byteCy = ir.top  - s.top  + ir.height/2;
+    const dir = tgt.x < byteCx ? -1 : 1;        // pod on the left (-1) or right (+1)
     this.el.classList.toggle('reaching-left', dir < 0);
     this.el.classList.toggle('reaching-right', dir > 0);
 
-    // 1,4) the arm grows from a SOCKET placed over Byte's sprite hand. The hand sits
-    // at the lower-left / lower-right of the (scaled) sprite box; the socket masks it
-    // and becomes the shoulder, so we never see the original hand AND the stretch arm.
-    const shoulder = {
-      x: ir.left - s.left + (dir > 0 ? 0.87 : 0.13) * ir.width,
-      y: ir.top  - s.top  + 0.78 * ir.height,
-    };
-    const socket = document.createElement('div');
-    socket.className = 'arm-socket';
-    socket.style.width = socket.style.height = (ir.width * 0.40) + 'px';
-    socket.style.left = shoulder.x + 'px';
-    socket.style.top  = shoulder.y + 'px';
-    effectLayer.appendChild(socket);    // above Byte (layer z40), below the arm (z24 in-layer)
-    this.socket = socket;
-    // 3,5) reveal the socket (scale .8→1, 150ms) ~80ms before the arm shoots
-    requestAnimationFrame(() => socket.classList.add('show'));
-    await sleep(80);
+    // --- 9-slice geometry (render the 612x237 SVG at Byte's on-screen height) ---
+    const H = ir.height;                  // match Byte's height so the swap is seamless
+    const S = H / 237;                    // SVG units → screen px
+    const bodyW = 179 * S;                // body slice  (x 0..179)  — fixed
+    const capW  = 18  * S;                // hand  slice (x 594..612) — fixed
 
-    const dx = tgt.x - shoulder.x, dy = tgt.y - shoulder.y;
-    const dist  = Math.hypot(dx, dy);
-    const angle = Math.atan2(dy, dx);
+    // The shoulder (body/tube seam) is the pivot: the arm grows AND rotates from it.
+    // Centre the SVG body over Byte; the shoulder is its inner edge toward the pod.
+    const sy = byteCy;                                  // tube sits at body mid-height
+    const originX = byteCx + dir * (bodyW / 2);         // shoulder X (screen)
+
+    // Aim: rotate the whole container so its local +x axis points at the pod.
+    const dx = tgt.x - originX, dy = tgt.y - sy;
+    const dist = Math.hypot(dx, dy);
+    const phi  = Math.atan2(dy, dx) * 180 / Math.PI;
+    // CSS `rotate(theta) scaleX(dir)` applies scaleX first, then rotate:
+    //   dir +1 → theta = phi ; dir -1 → theta = phi - 180  (mirror handles direction)
+    const theta = dir > 0 ? phi : phi - 180;
 
     // ANTICIPATION (120ms): wind up — lean away from the pod and stretch tall
     const breath = this.el.querySelector('.byte-breath');
     this.el.classList.add('anticipate');
     breath.style.transform = `translateX(${-dir * 4}px) scale(.96, 1.04)`;
     await sleep(120);
-    breath.style.transform = '';        // released as the arm shoots
+    breath.style.transform = '';
     this.el.classList.remove('anticipate');
+
+    // 1) hide byte.png and drop the SVG stretch container in its place
+    const stretch = document.createElement('div');
+    stretch.className = 'byte-stretch';
+    stretch.style.height = H + 'px';
+    stretch.style.left = (originX - bodyW) + 'px';      // body's left edge
+    stretch.style.top  = (sy - H / 2) + 'px';
+    stretch.style.transformOrigin = bodyW + 'px 50%';   // pivot at the shoulder
+    stretch.style.transform = `rotate(${theta}deg) scaleX(${dir})`;
+    stretch.innerHTML =
+      '<div class="stretch-body"></div>' +
+      '<div class="stretch-middle"></div>' +
+      '<div class="stretch-cap"></div>';
+    const body = stretch.children[0], middle = stretch.children[1], cap = stretch.children[2];
+    body.style.width = bodyW + 'px';
+    cap.style.width  = capW  + 'px';
+    sliceMiddle(middle, 0);                              // start collapsed (Byte + nub)
+    effectLayer.appendChild(stretch);
+    this.img.style.opacity = '0';                       // hide the normal Byte sprite
+    this.stretch = stretch; this.stretchMiddle = middle;
+    await sleep(60);
 
     return new Promise(resolve => {
       playSound('arm');
-      const arm = document.createElement('div');
-      arm.className = 'byte-arm';
-      arm.innerHTML = '<div class="claw"></div>';
-      arm.style.left = shoulder.x + 'px';
-      arm.style.top  = shoulder.y + 'px';
-      // 2) created at FINAL width; we only animate scaleX so thickness stays constant
-      arm.style.width = dist + 'px';
-      arm.style.transform = `rotate(${angle}rad) scaleX(0)`;
-      arm.style.setProperty('--inv', '6');   // counter-scale the hand/joint at sx≈0
-      effectLayer.appendChild(arm);          // screen-space layer
-      this.arm = arm;
+      // 5) tube length = reach from shoulder to pod, minus the rigid hand cap
+      const targetW = Math.max(0, dist - capW);
+      this._stretchTargetW = targetW;
 
-      // bush is hit at a fraction of the full reach
-      let bushFrac = Infinity, leafDone = false;
+      // bush is pierced when the hand cap reaches it (slightly early, ×0.9)
+      let bushThresh = Infinity, leafDone = false;
       if (bush){
         const bc = centerOf(bush.el);
-        bushFrac = (Math.hypot(bc.x - shoulder.x, bc.y - shoulder.y) / dist) * 0.9;
+        const bd = Math.hypot(bc.x - originX, bc.y - sy);
+        bushThresh = Math.max(0, bd - capW) * 0.9;
       }
 
-      // 3,6) fast-out / slow-in stretch — cubic-bezier(.22,1,.36,1), no bounce
+      // 6) fast-out / slow-in stretch — cubic-bezier(.22,1,.36,1)
       const ease = cubicBezier(0.22, 1, 0.36, 1);
       const DUR = 550, start = performance.now();
       const step = (now) => {
         const t = clamp((now - start) / DUR, 0, 1);
-        let sx = ease(t);
-        // 7) subtle overshoot in the last 10%: scaleX 1 → 1.025 → 1
-        if (t > 0.9){ const k = (t - 0.9) / 0.1; sx = 1 + 0.025 * Math.sin(Math.PI * k); }
-        arm.style.transform = `rotate(${angle}rad) scaleX(${sx})`;
-        arm.style.setProperty('--inv', (1 / Math.max(sx, 0.16)).toFixed(3));
-        if (!leafDone && bush && sx >= bushFrac){
+        let w = ease(t) * targetW;
+        // 7) tiny overshoot in the last 10%: +12px then settle
+        if (t > 0.9){ const k = (t - 0.9) / 0.1; w = targetW + 12 * Math.sin(Math.PI * k); }
+        sliceMiddle(middle, w);
+        if (!leafDone && bush && w >= bushThresh){
           leafDone = true; bush.rustle();
           const bc = centerOf(bush.el);
           this.particles.emit('leaf', bc.x, bc.y - bush.el.clientHeight*0.2, 14);
         }
         if (t < 1) requestAnimationFrame(step);
-        else { arm.style.transform = `rotate(${angle}rad) scaleX(1)`;
-               arm.style.setProperty('--inv', '1'); resolve(); }
+        else { sliceMiddle(middle, targetW); resolve(); }
       };
       requestAnimationFrame(step);
     });
   }
 
-  /** 8) Fast retraction (250ms): scaleX 1 → 0, the hand follows back to the body,
-      then the socket fades out (1→.8, 150ms) 100ms after the arm is gone. */
+  /** Retract: collapse the tube width targetW → 0 (280ms), then remove the
+      stretch container and reveal byte.png again. */
   retractArm(){
     return new Promise(resolve => {
-      // fade + remove the socket AFTER the stretch arm has disappeared
-      const fadeSocket = () => {
-        const sock = this.socket; this.socket = null;
-        if (sock){ sock.classList.remove('show'); setTimeout(() => sock.remove(), 170); }
+      const stretch = this.stretch, middle = this.stretchMiddle;
+      const finish = () => {
+        this.el.classList.remove('reaching-left','reaching-right');
+        if (stretch) stretch.remove();
+        this.stretch = null; this.stretchMiddle = null;
+        this.img.style.opacity = '';        // show the original Byte sprite again
+        resolve();
       };
-      const arm = this.arm;
-      if (!arm){ this.el.classList.remove('reaching-left','reaching-right');
-                 setTimeout(fadeSocket, 100); resolve(); return; }
-      const angle = (arm.style.transform.match(/rotate\(([-\d.]+)rad\)/) || [, '0'])[1];
-      const DUR = 250, start = performance.now();
+      if (!stretch || !middle){ finish(); return; }
+      const startW = this._stretchTargetW || 0;
+      const DUR = 280, start = performance.now();
       const step = now => {
         const t = clamp((now - start) / DUR, 0, 1);
-        const sx = Math.max(0, 1 - t * t);   // ease-in collapse, hand pulls back first
-        arm.style.transform = `rotate(${angle}rad) scaleX(${sx})`;
-        arm.style.setProperty('--inv', (1 / Math.max(sx, 0.16)).toFixed(3));
+        const w = startW * (1 - t * t);      // ease-in collapse, hand pulls back first
+        sliceMiddle(middle, w);
         if (t < 1) requestAnimationFrame(step);
-        else {
-          arm.remove(); this.arm = null;
-          this.el.classList.remove('reaching-left','reaching-right');
-          setTimeout(fadeSocket, 100);   // remove cover 100ms after retract completes
-          resolve();
-        }
+        else finish();
       };
       requestAnimationFrame(step);
     });
