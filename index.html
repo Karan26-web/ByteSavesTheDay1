@@ -4,7 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Byte Saves The Day · Energy Farm</title>
+<!-- chunky rounded bubble font for the playful title -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap" rel="stylesheet" />
 <!-- preload the stretch-arm asset so the first reach never flashes -->
+<link rel="preload" as="image" href="assets/PreLBDScreen.png" />
+<link rel="preload" as="image" href="assets/PodOpen.png" />
+<link rel="preload" as="image" href="assets/PodCap.png" />
+<link rel="preload" as="image" href="assets/DialoageBox1.svg" />
+<link rel="preload" as="image" href="assets/DialoageBox2.svg" />
 <link rel="preload" as="image" href="assets/ByteWithExtendedHand.svg" />
 <style>
 /* ============================================================
@@ -44,7 +53,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 #board.field-2::before{opacity:.3;background:linear-gradient(90deg, rgba(255,216,76,.5), rgba(74,190,120,.25));}
 
 .layer{position:absolute;inset:0;}
-#objectLayer{z-index:20;}     /* pods + bush (children of the board → grid-aligned) */
+#objectLayer{z-index:20;}     /* pods (children of the board → grid-aligned) */
 #effectLayer{z-index:40;pointer-events:none;}  /* arm, coins, particles (stage → screen px) */
 #uiLayer{z-index:70;pointer-events:none;}
 
@@ -71,23 +80,38 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:top 1.5s cubic-bezier(.38,.02,.28,1), left 1.5s cubic-bezier(.34,1.4,.5,1);
   z-index:25;will-change:top;}
 
+/* No idle float/breath/shadow animation — Byte stands still on its tile. Movement
+   comes only from walking (byteWalk/byteStep/walkShadow), reaching, charging, and the
+   happy/landing one-shots, which are added by more-specific .walking/.happy/.landing rules. */
 #byte .byte-shadow{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);
   width:66%;height:14%;border-radius:50%;z-index:0;pointer-events:none;
   background:radial-gradient(closest-side, rgba(0,0,0,.45), rgba(0,0,0,0));
-  filter:blur(2px);animation:shadowPulse 3.2s ease-in-out infinite;}
-#byte .byte-float{position:relative;z-index:1;height:100%;animation:byteFloat 3.2s ease-in-out infinite;}
-#byte .byte-breath{position:relative;height:100%;animation:byteBreath 2.6s ease-in-out infinite;
+  filter:blur(2px);}
+#byte .byte-float{position:relative;z-index:1;height:100%;}
+#byte .byte-breath{position:relative;height:100%;
   transform-origin:50% 100%;transition:transform .35s ease;}
-/* --byteScale corrects for the turn sprites being drawn bulkier than byte.png,
-   so Byte keeps the SAME visual size when it turns. Origin = feet (stays grounded). */
+/* --byteScale corrects for the no-hand turn sprites filling more of their frame than
+   byte.png, so Byte keeps the SAME visual size when it turns (char heights match:
+   byte.png fills .7115 of its frame, the no-hand sprites .9856 → .7115/.9856 ≈ .72).
+   Origin = feet (stays grounded). */
 #byte img{display:block;height:100%;width:auto;pointer-events:none;
   position:relative;z-index:1;
   filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));
   transform:scale(var(--byteScale,1));transform-origin:50% 100%;
   transition:transform .55s cubic-bezier(.34,1.5,.5,1);}
 
-#byte.walking .byte-float{animation:byteSlideFloat 1s ease-in-out infinite;}
-#byte.turnL img,#byte.turnR img{--byteScale:.74;}
+/* WALKING — a procedural step cycle replaces the idle hover so Byte takes
+   little robot steps (WALL-E / Astro Bot) instead of floating:
+     .byte-float  → bob + body lean + side-to-side weight shift (byteWalk)
+     .byte-breath → foot-contact squash / lift stretch          (byteStep)
+     .byte-shadow → shrinks on lift, grows on land              (walkShadow)
+   Overriding these animations also kills the normal float/breath. */
+#byte.walking .byte-float{animation:byteWalk .45s infinite ease-in-out;transform-origin:50% 90%;}
+#byte.walking .byte-breath{animation:byteStep .45s infinite ease-in-out;}
+#byte.walking .byte-shadow{animation:walkShadow .45s infinite ease-in-out;}
+/* landing impact as Byte settles onto its destination tile */
+#byte.landing .byte-breath{animation:byteLand .18s ease-out;}
+#byte.turnL img,#byte.turnR img{--byteScale:.72;}
 
 #byte .byte-aura{position:absolute;inset:-22% -28%;border-radius:50%;
   background:radial-gradient(closest-side, rgba(90,200,255,.55), rgba(90,200,255,0) 70%);
@@ -98,31 +122,67 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes byteFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3.5%)}}
 @keyframes shadowPulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.85}50%{transform:translateX(-50%) scale(.86);opacity:.6}}
 @keyframes byteBreath{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.975)}}
-@keyframes byteSlideFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3%)}}
+/* Procedural walk: vertical bob, alternating body lean, and weight shift.
+   Two foot-lifts per cycle (25% + 75%); contacts at 0/50/100%. */
+@keyframes byteWalk{
+  0%  {transform:translateX(-3px) translateY(0)    rotate(-2deg)}
+  25% {transform:translateX(0)    translateY(-5px) rotate(2deg)}
+  50% {transform:translateX(3px)  translateY(0)    rotate(2deg)}
+  75% {transform:translateX(0)    translateY(-5px) rotate(-2deg)}
+  100%{transform:translateX(-3px) translateY(0)    rotate(-2deg)}
+}
+/* Robot step squash: flatten on foot contact, stretch tall on lift (feet pivot) */
+@keyframes byteStep{
+  0%,50%,100%{transform:scaleX(1.03) scaleY(0.97)}
+  25%,75%    {transform:scaleX(0.98) scaleY(1.03)}
+}
+/* Shadow reacts to the gait: big + dark on landing, small + faint on lift */
+@keyframes walkShadow{
+  0%,50%,100%{transform:translateX(-50%) scale(1);opacity:.85}
+  25%,75%    {transform:translateX(-50%) scale(.78);opacity:.5}
+}
+/* Landing impact: squash wide on touchdown, tiny rebound, settle */
+@keyframes byteLand{
+  0%  {transform:scale(1.08,0.92)}
+  55% {transform:scale(0.98,1.03)}
+  100%{transform:scale(1)}
+}
 @keyframes byteHappy{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-22%) scale(1.06)}100%{transform:translateY(0) scale(1)}}
 @keyframes auraPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.12);opacity:.9}}
 
-/* ---------- Byte's stretchy arm — 9-slice of ByteWithExtendedHand.svg ----------
-   The original artist asset is sliced into three side-by-side panels, each
-   painting the SAME SVG as a background at different positions:
-     .stretch-body  → left   slice (Byte + shoulder)  — fixed width, pixel-perfect
-     .stretch-middle→ center band of the tube         — ONLY this width animates
-     .stretch-cap   → right  slice (rounded end+hand) — fixed width, pixel-perfect
-   The whole container is positioned at the shoulder and rotated/mirrored to aim
-   at the pod. Body and cap never scale, so they never deform — it reads as Byte's
-   own arm magically stretching from his shoulder. */
-.byte-stretch{position:absolute;display:flex;align-items:center;z-index:24;
+/* ---------- Byte's stretch ARM — cropped overlay on the no-hand turned sprite -------
+   The no-hand turn sprite (Left/RightTurnByte_NoHand.png) is the body (z-index 2) with
+   its reaching arm already removed; this overlay paints ONLY the arm (z-index 3),
+   emerging from the empty shoulder. Three side-by-side panels of the tube asset:
+     .stretch-conn   → fixed shoulder connector (a short uniform-tube segment)
+     .stretch-middle → the stretching tube      — ONLY this width animates
+     .stretch-cap    → fixed end cap (the hand)
+   Connector and cap never stretch, so they never deform. The container is pinned at
+   the shoulder and rotated/mirrored to aim the arm at the pod. */
+/* Lives in #board's stacking context: z 22 sits ABOVE the pods (objectLayer z20) so the
+   hand reaches in front of them, but BELOW Byte (#byte z25) so the arm root tucks behind
+   the body and emerges from the shoulder seam. */
+.byte-stretch{position:absolute;display:flex;align-items:center;z-index:22;
   pointer-events:none;will-change:transform;
   filter:drop-shadow(0 7px 9px rgba(0,0,0,.26));}
-.byte-stretch .stretch-body,
+/* Blue shoulder JOINT — a Byte-material (cyan) cap over the seam where the stretch arm
+   meets the shoulder. Sits above Byte (z26) so it reads as part of the body. Same cyan
+   as Byte's hands/feet/neck. Size set in JS to match the arm thickness. */
+.arm-joint{position:absolute;border-radius:50%;
+  background:radial-gradient(circle at 40% 32%, #dcf7ff, #4ac9ef 60%, #1ea6cf);
+  box-shadow:inset 0 1px 2px rgba(255,255,255,.8), inset 0 -2px 3px rgba(20,120,160,.45),
+             0 1px 3px rgba(0,0,0,.25);
+  transform:translate(-50%,-50%);z-index:26;pointer-events:none;}
+.byte-stretch .stretch-conn,
 .byte-stretch .stretch-middle,
 .byte-stretch .stretch-cap{height:100%;flex:none;
   background-image:url("assets/ByteWithExtendedHand.svg");
   background-repeat:no-repeat;}
-/* body + cap: full-height render of the SVG, just windowed left / right */
-.byte-stretch .stretch-body{background-position:left center;background-size:auto 100%;}
+/* cap: full-height render of the SVG, windowed to the right (the blue hand) */
 .byte-stretch .stretch-cap {background-position:right center;background-size:auto 100%;}
-/* middle: background-size + position are recomputed per-frame in JS (sliceMiddle) */
+/* connector + middle: background-size + position are set per-frame in JS (sliceMiddle),
+   both sampling the uniform tube band — the connector at a fixed width, middle animated */
+.byte-stretch .stretch-conn,
 .byte-stretch .stretch-middle{background-position:center;}
 
 /* anticipation: kill the idle breath so the wind-up reads cleanly */
@@ -146,20 +206,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:opacity .35s ease, transform .35s cubic-bezier(.34,1.5,.5,1);}
 .pod.hint .pod-glow-svg,
 .pod.glow .pod-glow-svg{animation:podPulseGlow 1.55s ease-in-out infinite;}
+/* --flip mirrors the art so the button faces Byte (set per side + open state in JS).
+   No idle bounce — the pod sits still on the grass. podPop uses `scale` so it composes
+   with the `transform` flip. */
 .pod .pod-img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;z-index:2;
-  filter:drop-shadow(0 5px 6px rgba(0,0,0,.22));transition:transform .3s ease;
-  animation:podBounce 2.4s ease-in-out infinite;}
+  filter:drop-shadow(0 5px 6px rgba(0,0,0,.22));transform:scaleX(var(--flip,1));}
+/* hint/glow: only the drop-shadow glow pulses — the pod body does NOT move vertically */
 .pod.hint .pod-img,
-.pod.glow .pod-img{animation:podBounce 2.4s ease-in-out infinite, podImageGlow 1.55s ease-in-out infinite;}
+.pod.glow .pod-img{animation:podImageGlow 1.55s ease-in-out infinite;}
 .pod.open .pod-img{animation:podPop .55s cubic-bezier(.34,1.6,.5,1);}
 
 /* bunny that rises out of a wrong (empty) pod — sits UPON the pod's opening.
    Sized by pod HEIGHT (not width) so it stays the same size on every pod shape. */
-.pod .pod-bunny{position:absolute;left:50%;bottom:64%;width:auto;height:92%;z-index:3;
+.pod .pod-bunny{position:absolute;left:50%;bottom:64%;width:auto;height:112%;z-index:3;
   transform-origin:50% 100%;transform:translate(-50%,55%) scale(.3);opacity:0;pointer-events:none;}
 .pod.bunny-out .pod-bunny{animation:bunnyRise .7s cubic-bezier(.34,1.6,.5,1) forwards;}
 @keyframes bunnyRise{0%{transform:translate(-50%,55%) scale(.35);opacity:0}
   60%{transform:translate(-50%,-6%) scale(1.05);opacity:1}100%{transform:translate(-50%,0) scale(1);opacity:1}}
+
+/* the lid (PodCap.png) launches off the pod and flies out the top of the screen */
+.pod-cap-fly{position:absolute;transform:translate(-50%,-50%);z-index:46;pointer-events:none;
+  filter:drop-shadow(0 8px 10px rgba(0,0,0,.32));
+  transition:top .85s cubic-bezier(.18,.6,.35,1), transform .85s cubic-bezier(.18,.6,.35,1);}
 
 .pod .pod-flash{position:absolute;inset:4% 10% 30%;border-radius:46%;pointer-events:none;z-index:3;
   background:radial-gradient(circle, rgba(255,246,185,.95), rgba(255,230,120,0) 70%);opacity:0;}
@@ -174,7 +242,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes podSpawn{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @keyframes podHintGlow{0%,100%{box-shadow:0 0 16px 4px rgba(255,210,60,.55)}50%{box-shadow:0 0 34px 12px rgba(255,210,60,.9)}}
 @keyframes podBurst{0%{box-shadow:0 0 0 0 rgba(255,240,150,.95)}100%{box-shadow:0 0 60px 30px rgba(255,240,150,0)}}
-@keyframes podPop{0%{transform:scale(1)}30%{transform:scale(1.06,.9)}60%{transform:scale(.96,1.07)}100%{transform:scale(1)}}
+@keyframes podPop{0%{scale:1}30%{scale:1.06 .9}60%{scale:.96 1.07}100%{scale:1}}
 @keyframes podFlash{0%{opacity:0;transform:scale(.6)}30%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
 @keyframes podPulseGlow{
   0%,100%{opacity:.7;transform:scale(.98)}
@@ -192,13 +260,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   60%{transform:translate(-53%,-50%) rotate(-4deg)}80%{transform:translate(-47%,-50%) rotate(4deg)}}
 
 /* ============================================================
-   5) EFFECTS  (coin, particles, leaves, bush, bunny) — screen-positioned
+   5) EFFECTS  (coin, particles, bunny) — screen-positioned
    ============================================================ */
 /* energy coin = Energy.svg (glowing bolt) */
 .coin{position:absolute;width:clamp(42px,8.4vw,68px);height:auto;
   transform:translate(-50%,-50%);z-index:42;pointer-events:none;
   transition:transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease;
   filter:drop-shadow(0 0 10px rgba(255,225,90,.85));}
+
+/* Tutorial dialogue bubbles — the DialoageBox SVG art is shown directly as an image
+   (its bubble, arrow, and text are baked in). Aspect is preserved (height auto +
+   object-fit:contain); only opacity + translateY animate. */
+.tutorial-box{position:absolute;height:auto;object-fit:contain;z-index:50;pointer-events:none;
+  opacity:0;transform:translateY(14px);
+  transition:opacity .3s ease, transform .3s cubic-bezier(.34,1.5,.5,1);
+  filter:drop-shadow(0 5px 9px rgba(0,0,0,.28));}
+.tutorial-box.show{opacity:1;transform:translateY(0);}
 
 .particle{position:absolute;border-radius:50%;pointer-events:none;z-index:41;
   transform:translate(-50%,-50%);will-change:transform,opacity;
@@ -207,33 +284,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   0%{opacity:1;transform:translate(-50%,-50%) translate(0,0) scale(1)}
   100%{opacity:0;transform:translate(-50%,-50%) translate(var(--tx),var(--ty)) scale(.2)}}
 
-.leaf{position:absolute;width:clamp(12px,2.6vw,18px);height:clamp(8px,1.8vw,12px);
-  background:linear-gradient(120deg,#a6e85a,#5fb226);border-radius:0 100% 0 100%;
-  z-index:43;pointer-events:none;transform:translate(-50%,-50%);
-  box-shadow:inset 0 0 3px rgba(0,0,0,.15);
-  animation:leafFly var(--dur,1.1s) cubic-bezier(.3,.7,.5,1) forwards;}
-@keyframes leafFly{
-  0%{opacity:1;transform:translate(-50%,-50%) translate(0,0) rotate(0)}
-  100%{opacity:0;transform:translate(-50%,-50%) translate(var(--tx),var(--ty)) rotate(var(--rot))}}
-
-.bush{position:absolute;width:10.2%;aspect-ratio:1.55;
-  transform:translate(-50%,-50%);z-index:23;pointer-events:none;
-  animation:bushSway 3s ease-in-out infinite;}
-.bush span{position:absolute;border-radius:50%;
-  background:radial-gradient(circle at 36% 28%, #9feb5b 0 18%, #72c83c 48%, #4a9b29 78%, #34741d 100%);
-  box-shadow:inset 0 -7px 10px rgba(20,70,20,.2), inset 0 5px 8px rgba(255,255,255,.28),
-             0 5px 7px rgba(20,50,15,.18);}
-.bush .b1{width:40%;height:62%;left:2%;bottom:8%;}
-.bush .b2{width:50%;height:82%;left:20%;bottom:5%;}
-.bush .b3{width:38%;height:58%;right:4%;bottom:8%;}
-.bush .b4{width:34%;height:48%;left:16%;bottom:34%;background:radial-gradient(circle at 34% 25%, #a7f469, #61b936 72%, #428922);}
-.bush .b5{width:38%;height:58%;right:21%;bottom:30%;background:radial-gradient(circle at 42% 25%, #93e855, #58ad32 74%, #377b1f);}
-.bush .b6{width:32%;height:42%;left:40%;bottom:43%;background:radial-gradient(circle at 36% 24%, #b4f675, #6fc43d 72%, #448d25);}
-.bush .trunk{left:42%;bottom:0;width:16%;height:36%;border-radius:40% 40% 18% 18%;
-  background:linear-gradient(90deg,#7c5428,#b27632 45%,#70491f);z-index:-1;}
-.bush.rustle{animation:bushRustle .5s ease;}
-@keyframes bushSway{0%,100%{transform:translate(-50%,-50%) rotate(-1.5deg)}50%{transform:translate(-50%,-50%) rotate(1.5deg)}}
-@keyframes bushRustle{0%,100%{transform:translate(-50%,-50%) scale(1)}25%{transform:translate(-52%,-52%) scale(1.06,.94)}50%{transform:translate(-48%,-50%) scale(.95,1.07)}75%{transform:translate(-51%,-50%) scale(1.04,.97)}}
 
 .bunny{position:absolute;width:clamp(66px,15vw,112px);height:auto;z-index:44;pointer-events:none;
   transform:translate(-50%,40%) scale(.3);opacity:0;filter:drop-shadow(0 6px 6px rgba(0,0,0,.3));}
@@ -287,12 +337,53 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes blink{50%{opacity:0}}
 @keyframes contPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 
-#hintChip{position:absolute;left:50%;top:clamp(58px,12vh,96px);transform:translateX(-50%) scale(.8);
-  background:rgba(54,182,230,.95);color:#fff;font-weight:800;
-  padding:.5em 1em;border-radius:999px;font-size:clamp(13px,3.4vw,17px);
-  box-shadow:0 6px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .4s ease, transform .4s cubic-bezier(.34,1.5,.5,1);
-  pointer-events:none;max-width:84vw;text-align:center;}
-#hintChip.show{opacity:1;transform:translateX(-50%) scale(1);}
+/* ── Energy instruction panel (staged: bulb pops → glass panel expands → text fades) ── */
+#instrPanel{position:absolute;left:50%;top:clamp(44px,10vh,86px);transform:translateX(-50%);
+  width:clamp(300px,60vw,720px);max-width:90vw;pointer-events:none;
+  opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s;}
+#instrPanel.show{opacity:1;visibility:visible;}
+/* energy bulb badge (uses Energy.svg) — pops in first with a yellow glow + pulse */
+#instrPanel .ip-bulb{position:absolute;left:clamp(-12px,-1.2vw,-8px);top:50%;z-index:3;
+  width:clamp(48px,10vw,66px);height:clamp(48px,10vw,66px);border-radius:50%;
+  display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 38%, rgba(12,58,60,.96), rgba(4,28,30,.96));
+  border:2px solid #25dff5;
+  box-shadow:0 0 18px 4px rgba(255,210,70,.7), inset 0 0 12px rgba(255,225,120,.3), 0 4px 10px rgba(0,0,0,.35);
+  transform:translateY(-50%) scale(0) rotate(-10deg);opacity:0;}
+#instrPanel .ip-bulb svg{width:58%;height:58%;display:block;filter:drop-shadow(0 0 5px rgba(255,225,120,.95));}
+#instrPanel.bulb-in .ip-bulb{
+  animation:ipBulbPop .4s cubic-bezier(.34,1.7,.5,1) forwards, ipBulbPulse 1.7s ease-in-out .4s infinite;}
+/* dark glass panel with cyan glow border; revealed left→right via clip-path */
+#instrPanel .ip-body{position:relative;box-sizing:border-box;
+  padding:.72em 1.1em .72em clamp(54px,11vw,76px);
+  background:rgba(5,35,35,.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:2px solid #25dff5;border-radius:25px;box-shadow:0 0 20px rgba(0,220,255,.5);
+  clip-path:inset(0 100% 0 0 round 25px);opacity:0;
+  transition:clip-path .5s ease, opacity .3s ease;}
+#instrPanel.panel-open .ip-body{clip-path:inset(0 0 0 0 round 25px);opacity:1;}
+/* instruction text fades up after the panel opens */
+#instrPanel .ip-text{color:#fff;font-weight:700;line-height:1.38;text-align:center;
+  font-size:clamp(13px,3.2vw,17px);text-shadow:0 1px 3px rgba(0,0,0,.5);
+  opacity:0;transform:translateY(10px);transition:opacity .45s ease, transform .45s ease;}
+#instrPanel.text-in .ip-text{opacity:1;transform:translateY(0);}
+/* futuristic HUD corner brackets */
+#instrPanel .ip-c{position:absolute;width:13px;height:13px;border:2px solid #25dff5;opacity:.75;pointer-events:none;}
+#instrPanel .ip-tl{top:7px;left:7px;border-right:none;border-bottom:none;border-radius:7px 0 0 0;}
+#instrPanel .ip-tr{top:7px;right:7px;border-left:none;border-bottom:none;border-radius:0 7px 0 0;}
+#instrPanel .ip-bl{bottom:7px;left:7px;border-right:none;border-top:none;border-radius:0 0 0 7px;}
+#instrPanel .ip-br{bottom:7px;right:7px;border-left:none;border-top:none;border-radius:0 0 7px 0;}
+/* tiny drifting energy specks inside the panel (run only while open — lightweight) */
+#instrPanel .ip-spark{position:absolute;bottom:6px;width:4px;height:4px;border-radius:50%;
+  background:#7af0ff;box-shadow:0 0 6px 1px rgba(120,240,255,.9);opacity:0;pointer-events:none;}
+#instrPanel.panel-open .ip-spark{animation:ipSpark linear infinite;}
+#instrPanel .ip-spark.s1{left:24%;animation-duration:3.2s;}
+#instrPanel .ip-spark.s2{left:52%;animation-duration:4s;animation-delay:1s;}
+#instrPanel .ip-spark.s3{left:78%;animation-duration:3.6s;animation-delay:.5s;}
+@keyframes ipBulbPop{0%{transform:translateY(-50%) scale(0) rotate(-10deg);opacity:0}
+  100%{transform:translateY(-50%) scale(1) rotate(0);opacity:1}}
+@keyframes ipBulbPulse{0%,100%{box-shadow:0 0 14px 2px rgba(255,210,70,.55), inset 0 0 12px rgba(255,225,120,.3), 0 4px 10px rgba(0,0,0,.35)}
+  50%{box-shadow:0 0 26px 8px rgba(255,228,120,.95), inset 0 0 14px rgba(255,235,150,.45), 0 4px 10px rgba(0,0,0,.35)}}
+@keyframes ipSpark{0%{transform:translateY(0);opacity:0}20%{opacity:.85}80%{opacity:.5}100%{transform:translateY(-26px);opacity:0}}
 
 #bigMsg{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);
   color:#fff;font-weight:900;text-align:center;opacity:0;pointer-events:none;z-index:75;
@@ -311,6 +402,51 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 #tapCatcher{position:absolute;inset:0;z-index:65;display:none;cursor:pointer;}
 #tapCatcher.on{display:block;pointer-events:auto;}
 
+/* ---------- Welcome scene (bright, magical energy-farm title) ---------- */
+/* light teal wash + soft blur — keeps the farm colours showing through */
+#welcomeScene{position:absolute;inset:0;z-index:80;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.7em;text-align:center;
+  pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 46%, rgba(0,40,40,.16) 0%, rgba(0,40,40,.3) 100%);
+  -webkit-backdrop-filter:blur(0px);backdrop-filter:blur(0px);
+  transition:opacity .4s ease, -webkit-backdrop-filter .4s ease, backdrop-filter .4s ease;}
+#welcomeScene.show{opacity:1;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+/* soft yellow energy glow behind the title (magical, fresh) */
+#welcomeScene .welcome-glow{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);
+  width:min(86vw,920px);height:min(48vh,440px);z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(255,230,90,.28) 0%, rgba(120,225,255,.1) 45%, rgba(120,225,255,0) 70%);
+  filter:blur(28px);}
+#welcomeScene.show .welcome-glow{animation:welcomeGlow 3s ease-in-out infinite alternate;}
+/* premium puzzle-game logo: cream fill, slim Byte-cyan stroke, soft blue drop + yellow glow */
+#welcomeScene .welcome-title{position:relative;z-index:1;
+  font-family:'Baloo 2','Comic Sans MS','Segoe UI Rounded',sans-serif;
+  font-size:clamp(40px,11vw,118px);font-weight:800;line-height:1.08;letter-spacing:.005em;
+  color:#FFF8D8;
+  -webkit-text-stroke:6px #16BFD4;paint-order:stroke fill;
+  text-shadow:0 8px 0 rgba(0,120,150,.35), 0 0 25px rgba(255,230,80,.4);
+  opacity:0;transform:scale(.7) translateY(-20px);}
+#welcomeScene.show .welcome-title{
+  animation:welcomePop .7s cubic-bezier(.34,1.56,.5,1) forwards,
+            welcomeFloat 3.4s ease-in-out .7s infinite alternate;}
+/* tap-to-start: cream text, soft glow, cyan play triangle, gentle pulse */
+#welcomeScene .welcome-sub{position:relative;z-index:1;
+  font-size:clamp(16px,4vw,30px);font-weight:800;color:#FFF8E8;
+  text-shadow:0 2px 6px rgba(0,80,100,.4), 0 0 14px rgba(120,230,255,.5);
+  opacity:0;}
+#welcomeScene .welcome-sub .play-tri{color:#16BFD4;text-shadow:0 0 10px rgba(22,191,212,.85);}
+#welcomeScene.show .welcome-sub{animation:welcomeSubIn .4s ease .6s forwards, tapPulse 1.3s ease-in-out 1s infinite alternate;}
+/* drifting energy specks (cyan/yellow) — created in JS */
+#welcomeScene .welcome-particle{position:absolute;border-radius:50%;z-index:0;pointer-events:none;
+  animation:welcomeSpeck linear infinite;}
+@keyframes welcomePop{0%{transform:scale(.7) translateY(-20px);opacity:0}
+  60%{transform:scale(1.05) translateY(0);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+@keyframes welcomeFloat{0%{transform:translateY(-5px)}100%{transform:translateY(5px)}}
+@keyframes welcomeGlow{0%{opacity:.7;transform:translate(-50%,-50%) scale(.96)}100%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
+@keyframes welcomeSubIn{to{opacity:1}}
+@keyframes tapPulse{0%{opacity:.75;transform:scale(1)}100%{opacity:1;transform:scale(1.05)}}
+@keyframes welcomeSpeck{0%{transform:translateY(0) scale(1);opacity:0}
+  20%{opacity:.5}80%{opacity:.35}100%{transform:translateY(-130px) scale(.5);opacity:0}}
+
 #sndBtn{position:absolute;top:clamp(12px,3vh,22px);right:clamp(12px,3vw,20px);
   width:clamp(40px,10vw,50px);height:clamp(40px,10vw,50px);border-radius:50%;border:none;
   background:rgba(255,255,255,.9);box-shadow:0 5px 14px rgba(0,0,0,.2);cursor:pointer;
@@ -319,16 +455,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 #sndBtn:active{transform:scale(.9);}
 
 /* ---------- Start gate ---------- */
-#startScreen{position:absolute;inset:0;z-index:95;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;cursor:pointer;text-align:center;padding:0 6vw;
-  background:radial-gradient(circle at 50% 40%, rgba(30,110,150,.55), rgba(8,24,32,.82));
-  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);transition:opacity .5s ease;}
+#startScreen{position:absolute;inset:0;z-index:95;cursor:pointer;
+  background:#8ed0ea url("assets/PreLBDScreen.png") center/cover no-repeat;
+  transition:opacity .5s ease;}
 #startScreen.hide{opacity:0;pointer-events:none;}
-#startScreen .emoji{font-size:clamp(50px,15vw,92px);margin-bottom:.1em;animation:winBounce 1.4s ease-in-out infinite;}
-#startScreen h1{color:#fff;font-size:clamp(28px,8vw,56px);text-shadow:0 4px 0 #1b9bd1, 0 8px 18px rgba(0,0,0,.45);}
-#startScreen .title2{color:#bfeeff;font-weight:800;font-size:clamp(18px,5vw,28px);margin-top:.1em;letter-spacing:.04em;}
-#startScreen .sub{color:#dff4ff;font-weight:800;margin-top:1em;font-size:clamp(15px,4.5vw,22px);
-  animation:contPulse 1.3s ease-in-out infinite;}
+/* Glossy green 3D PLAY button (bottom-right), matching the splash art style */
+#startScreen .play-btn{position:absolute;right:5%;bottom:9%;
+  display:flex;align-items:center;gap:.38em;
+  font-family:inherit;font-weight:900;font-size:clamp(20px,5vw,40px);letter-spacing:.05em;
+  color:#fff;text-shadow:0 2px 0 rgba(20,80,10,.5),0 4px 7px rgba(0,0,0,.3);
+  padding:.4em 1.1em .46em;border-radius:999px;cursor:pointer;
+  border:4px solid #f0fff2;
+  background:linear-gradient(#a6ec53,#6cc028 55%,#54a31d);
+  box-shadow:0 9px 0 #357c14, 0 14px 20px rgba(0,0,0,.32),
+             inset 0 4px 5px rgba(255,255,255,.6), inset 0 -6px 9px rgba(20,70,0,.28);
+  animation:playPulse 1.3s ease-in-out infinite;
+  transition:transform .08s ease, box-shadow .08s ease;}
+#startScreen .play-btn:active{animation:none;transform:translateY(5px);
+  box-shadow:0 3px 0 #357c14, 0 6px 10px rgba(0,0,0,.32),
+             inset 0 4px 5px rgba(255,255,255,.55), inset 0 -6px 9px rgba(20,70,0,.28);}
+/* white play triangle */
+#startScreen .play-btn::before{content:"";width:0;height:0;border-style:solid;
+  border-width:.4em 0 .4em .62em;border-color:transparent transparent transparent #fff;
+  filter:drop-shadow(0 2px 1px rgba(20,70,0,.35));}
+@keyframes playPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
 
 /* ============================================================
    7) WIN SCREEN
@@ -397,8 +547,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
       <div class="cell"><div class="fill"></div></div>
       <span class="pct">15%</span>
     </div>
-    <div id="hintChip"></div>
+    <div id="instrPanel">
+      <div class="ip-bulb"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><linearGradient id="ipBulbGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFF3A8"/><stop offset=".55" stop-color="#FFE14D"/><stop offset="1" stop-color="#FBC51E"/>
+        </linearGradient></defs>
+        <path d="M11 20.5C8.5 18.8 7 16.1 7 13 7 8 11 4.5 16 4.5S25 8 25 13c0 3.1-1.5 5.8-4 7.5-.8.6-1.2 1.3-1.2 2.1V23h-7.6v-.4c0-.8-.4-1.5-1.2-2.1Z"
+          fill="url(#ipBulbGrad)" stroke="#D98E12" stroke-width="1.3" stroke-linejoin="round"/>
+        <ellipse cx="12.4" cy="10" rx="1.5" ry="2.5" fill="#FFFDF0" opacity=".7" transform="rotate(-20 12.4 10)"/>
+        <path d="M13 12.6l1.7 2.3 2.6-3.2 1.7 2.3" fill="none" stroke="#D98E12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="23.2" width="8" height="2.4" rx="1" fill="#E4E6EC"/>
+        <rect x="12.8" y="25.4" width="6.4" height="2.2" rx="1" fill="#C8CBD4"/>
+        <path d="M13.7 27.5h4.6" stroke="#A6A9B3" stroke-width="1" stroke-linecap="round"/>
+      </svg></div>
+      <div class="ip-body">
+        <span class="ip-c ip-tl"></span><span class="ip-c ip-tr"></span>
+        <span class="ip-c ip-bl"></span><span class="ip-c ip-br"></span>
+        <i class="ip-spark s1"></i><i class="ip-spark s2"></i><i class="ip-spark s3"></i>
+        <div class="ip-text"></div>
+      </div>
+    </div>
     <div id="bigMsg"></div>
+    <div id="welcomeScene">
+      <div class="welcome-glow"></div>
+      <div class="welcome-title">Welcome to the<br>Energy Farm!</div>
+      <div class="welcome-sub"><span class="play-tri">▶</span> tap to start</div>
+    </div>
     <div id="fieldCurtain">Next Field</div>
     <div id="instruction">
       <div class="txt"></div>
@@ -411,10 +585,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 
   <!-- Start gate (also unlocks audio on first tap) -->
   <div id="startScreen">
-    <div class="emoji">🤖</div>
-    <h1>Byte Saves the Day</h1>
-    <div class="title2">Energy Farm</div>
-    <div class="sub">▶ Tap to Start</div>
+    <button class="play-btn" type="button" aria-label="Play">PLAY</button>
   </div>
 
   <!-- Win -->
@@ -464,17 +635,25 @@ function centerOf(el){
 }
 
 /* ------------------------------------------------------------
-   9-SLICE for ByteWithExtendedHand.svg (viewBox 0 0 612 237)
-     body slice  : x[0,179]   (Byte + shoulder)
-     tube         : x[179,594] (uniform beige capsule — stretchable)
-     cap slice   : x[594,612] (rounded end + blue hand)
-   The middle div shows ONLY a uniform sub-band of the tube, scaled to
-   any width. Because the tube has a constant cross-section, scaling it
-   horizontally is invisible — no deformation of body or cap.
+   ARM crop from ByteWithExtendedHand.svg (viewBox 0 0 612 237). We use ONLY the
+   arm, never the body (the turned sprite is the body):
+     tube : x[179,594] (uniform beige capsule — the stretchable part)
+     cap  : x[594,612] (rounded end + blue hand — fixed)
+   The connector and middle panels both paint a uniform sub-band of the tube,
+   scaled to any width. Because the tube has a constant cross-section, scaling it
+   horizontally is invisible — no deformation of the connector or hand.
    ------------------------------------------------------------ */
-const SVG_VB_W = 612, SVG_SAMPLE_A = 210, SVG_SAMPLE_B = 560;     // pure-tube band
+const SVG_VB_W = 612, SVG_VB_H = 237;
+const SVG_SAMPLE_A = 210, SVG_SAMPLE_B = 560;                    // pure-tube band
 const SVG_SAMPLE_BAND = SVG_SAMPLE_B - SVG_SAMPLE_A;              // 350
-/** size the .stretch-middle background so [SAMPLE_A,SAMPLE_B] fills width `mw` */
+const SVG_CAP_W = 18;                                            // hand-cap slice width (x594..612)
+const SVG_TUBE_THICK = 29;                                       // tube band height (y101..130)
+const ARM_THICK = 0.20;                                          // arm thickness ÷ turned-sprite height
+const ARM_CONN_U = 30;                                           // shoulder-connector width (SVG units)
+const ARM_OVERLAP = 8;                                           // px the arm root tucks back behind the shoulder edge
+/* Empty-shoulder socket as a fraction of the no-hand turned sprite's box — tune to taste. */
+const SHOULDER_POINTS = { right: { x: 0.78, y: 0.58 }, left: { x: 0.22, y: 0.58 } };
+/** size a tube panel's background so the pure-tube band [SAMPLE_A,SAMPLE_B] fills width `mw` */
 function sliceMiddle(el, mw){
   const w = Math.max(0, mw);
   const bgW = SVG_VB_W * w / SVG_SAMPLE_BAND;        // full-image width at this scale
@@ -495,20 +674,20 @@ const PATH_X    = 50.13;                                   // path/centre column
 const TILE_TOPS = [16.9, 29.5, 42.0, 54.3, 66.7, 79.0];    // grass row centres (y %)
 const ENTER_FROM = 110;     // start below the board
 const EXIT_TO = -14;         // leave through the top path between fields
-const PLAY_TILE = TILE_TOPS[3]; // 3rd path tile from the bottom
+const PLAY_TILE = TILE_TOPS[2]; // Byte's play row — SAME tile row as the pods (horizontal reach)
 
 /* ============================================================
    AudioManager — synthesised, soft kid-friendly SFX (Web Audio API)
    ============================================================ */
 class AudioManager {
-  constructor(){ this.ctx=null; this.master=null; this.enabled=true; this._stepIdx=0; }
+  constructor(){ this.ctx=null; this.master=null; this.enabled=true; this._stepIdx=0; this._footIdx=0; }
   init(){
     if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { this.enabled=false; return; }
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.3;
+    this.master.gain.value = 0.42;   // overall SFX volume (a touch louder)
     this.master.connect(this.ctx.destination);
   }
   resume(){ if (this.ctx && this.ctx.state==='suspended') this.ctx.resume(); }
@@ -557,6 +736,17 @@ class AudioManager {
         this._noise({ dur:.04, gain:.06 });   // soft landing tick
         break;
       }
+      case 'footstep': { // soft little robot footfall, alternating L/R pitch as Byte walks
+        const base = (this._footIdx++ % 2) ? 124 : 104;   // two feet → two pitches
+        this._tone({ freq:base,     slideTo:base*0.62, dur:.10, type:'sine',     gain:.15 });
+        this._tone({ freq:base*2.4, dur:.045, type:'triangle', gain:.045 });   // tiny servo tick
+        this._noise({ dur:.03, gain:.045 });               // soft padded contact
+        break;
+      }
+      case 'land': // heavier footfall as Byte settles onto its tile
+        this._tone({ freq:96, slideTo:60, dur:.16, type:'sine', gain:.20 });
+        this._noise({ dur:.05, gain:.08 });
+        break;
       case 'turn': // quick servo whir as Byte turns its body
         this._tone({ freq:540, slideTo:360, dur:.13, type:'triangle', gain:.10 });
         this._noise({ dur:.05, gain:.04 });
@@ -577,6 +767,11 @@ class AudioManager {
       case 'pop':
         this._noise({ dur:.07, gain:.18 });
         this._tone({ freq:680, slideTo:1300, dur:.13, type:'sine', gain:.18 });
+        break;
+      case 'cap': // lid pops + whooshes off the pod and away
+        this._noise({ dur:.05, gain:.17 });                                    // cork pop
+        this._tone({ freq:300, slideTo:1500, dur:.45, type:'triangle', gain:.12 }); // rising whoosh
+        this._tone({ freq:620, slideTo:1950, dur:.40, type:'sine', gain:.06, when:.04 });
         break;
       case 'coin':
         this._tone({ freq:988,  dur:.08, type:'square', gain:.16 });
@@ -603,7 +798,7 @@ class AudioManager {
 }
 const audio = new AudioManager();
 /* public placeholder API (drives the AudioManager):
-   playSound("slide"|"step"|"arm"|"charge"|"pop"|"wrong"|"coin"|"bunny"|"win") */
+   playSound("slide"|"step"|"footstep"|"land"|"arm"|"charge"|"pop"|"cap"|"wrong"|"coin"|"bunny"|"win") */
 function playSound(name){ audio.play(name); }
 
 /* ============================================================
@@ -616,24 +811,19 @@ class ParticleSystem {
       const ang = rand(0, Math.PI*2), dist = rand(40, 130);
       const tx = Math.cos(ang)*dist, ty = Math.sin(ang)*dist;
       const p = document.createElement('div');
-      p.className = (type === 'leaf') ? 'leaf' : 'particle';
+      p.className = 'particle';
       p.style.left = x + 'px'; p.style.top = y + 'px';
       p.style.setProperty('--tx', tx.toFixed(1)+'px');
       p.style.setProperty('--ty', ty.toFixed(1)+'px');
       p.style.setProperty('--dur', rand(0.7,1.3).toFixed(2)+'s');
-      if (type === 'leaf'){
-        p.style.setProperty('--rot', rand(-540,540).toFixed(0)+'deg');
-        p.style.setProperty('--ty', (Math.abs(ty)*rand(.6,1.2)+rand(10,40)).toFixed(1)+'px');
-      } else {
-        const size = rand(6, 14);
-        p.style.width = p.style.height = size+'px';
-        p.style.background = (type === 'charge')
-          ? 'radial-gradient(circle, #d6f4ff, #4fc3f7)'
-          : 'radial-gradient(circle, #fff6c2, #ffd23f)';
-        p.style.boxShadow = (type === 'charge')
-          ? '0 0 8px 2px rgba(80,195,247,.8)'
-          : '0 0 8px 2px rgba(255,210,60,.8)';
-      }
+      const size = rand(6, 14);
+      p.style.width = p.style.height = size+'px';
+      p.style.background = (type === 'charge')
+        ? 'radial-gradient(circle, #d6f4ff, #4fc3f7)'
+        : 'radial-gradient(circle, #fff6c2, #ffd23f)';
+      p.style.boxShadow = (type === 'charge')
+        ? '0 0 8px 2px rgba(80,195,247,.8)'
+        : '0 0 8px 2px rgba(255,210,60,.8)';
       p.addEventListener('animationend', () => p.remove(), { once:true });
       this.layer.appendChild(p);
     }
@@ -662,9 +852,13 @@ class ParticleSystem {
    Byte
    ============================================================ */
 const BYTE_SPRITES = {
-  forward: 'assets/byte.png',          // back view — walking up the path
-  left:    'assets/leftTurnByte.png',  // turned to a left pod
-  right:   'assets/RightTurnByte.png', // turned to a right pod
+  forward: 'assets/byte.png',                   // back view — walking up the path
+  left:    'assets/leftTurnByte.png',           // turned left, normal hands (scan/turn)
+  right:   'assets/RightTurnByte.png',          // turned right, normal hands (scan/turn)
+  // no-hand variants — swapped in ONLY during the reach, so the stretch arm
+  // replaces the missing hand (same visual size, seamless swap):
+  leftNoHand:  'assets/LeftTurnByte_NoHand.png',
+  rightNoHand: 'assets/RightTurnByte_NoHand.png',
 };
 class Byte {
   constructor(el, particles){
@@ -691,6 +885,11 @@ class Byte {
   faceLeft(){ this._face('left'); }
   faceRight(){ this._face('right'); }
   turnTo(pod){ pod.side === 'left' ? this.faceLeft() : this.faceRight(); }
+  /** silently swap the (already-turned) sprite to its no-hand variant for the reach —
+      same direction, same visual size, so the stretch arm can replace the hand */
+  _faceReach(dir){
+    this.img.src = dir > 0 ? BYTE_SPRITES.rightNoHand : BYTE_SPRITES.leftNoHand;
+  }
 
   async scan(){
     this.faceLeft(); await sleep(950);
@@ -698,107 +897,124 @@ class Byte {
     this.faceForward(); await sleep(450);
   }
 
-  /** smooth glide along the painted path */
+  /** Step-walk along the painted path. The position advances in discrete hops
+      (~one per foot contact, every ~225ms) instead of a smooth glide, so it
+      reads as walking rather than sliding — the bob + squash hide the hops. */
   async slideTo(topPercent, { duration = 1500, sound = 'slide' } = {}){
     if (sound) playSound(sound);
-    this.el.style.transition = `top ${duration}ms cubic-bezier(.38,.02,.28,1)`;
+    const hops = Math.max(2, Math.round(duration / 225));   // sync to the .45s gait
+    this.el.style.transition = `top ${duration}ms steps(${hops}, jump-end)`;
     this.el.classList.add('walking');
     this.setTopPercent(topPercent);
+    // footstep SFX on each foot contact (~every 225ms, matching the walk cycle)
+    const steps = setInterval(() => playSound('footstep'), 225);
     await sleep(duration);
+    clearInterval(steps);
     this.el.classList.remove('walking');
     this.el.style.transition = '';
+    // little landing squash + heavier footfall as Byte settles onto the tile
+    this.el.classList.add('landing');
+    playSound('land');
+    setTimeout(() => this.el.classList.remove('landing'), 200);
   }
 
-  /** Reach toward target by stretching Byte's OWN arm — a 9-slice of the artist
-      asset ByteWithExtendedHand.svg. byte.png is hidden; a [body][tube][cap]
-      container takes its place. Only the tube's width animates, so the body and
-      blue hand stay pixel-perfect — it reads as Byte's arm magically extending. */
-  async extendArm(targetEl, bush){
-    const s  = stage.getBoundingClientRect();
-    const ir = this.img.getBoundingClientRect();
-    const tgt = centerOf(targetEl);
-    const byteCx = ir.left - s.left + ir.width/2;
-    const byteCy = ir.top  - s.top  + ir.height/2;
-    const dir = tgt.x < byteCx ? -1 : 1;        // pod on the left (-1) or right (+1)
+  /** Reach toward a target. handlePodTap already turned Byte with the NORMAL hand
+      sprite; here we hold briefly, swap to the matching NO-HAND sprite, then overlay a
+      cropped arm (connector + stretching tube + hand cap) from the empty shoulder.
+      Sequence: (hand turn done) → 120ms → swap to no-hand → arm grows. */
+  async extendArm(targetEl){
+    // direction from the current (hand) turn sprite
+    const ir0 = this.img.getBoundingClientRect();
+    const t0  = targetEl.getBoundingClientRect();
+    const dir = (t0.left + t0.width/2) < (ir0.left + ir0.width/2) ? -1 : 1;  // pod left/right
+
+    // STEP 2-3: hold the hand-turn pose 120ms, then swap to the no-hand variant (same
+    // direction, same size) so the stretch arm replaces the hand. Wait a frame so the
+    // swapped sprite is laid out before we measure its empty shoulder.
+    await sleep(120);
+    this._faceReach(dir);
+    await new Promise(r => requestAnimationFrame(r));
+
+    // Work in BOARD coordinates: the arm is appended to #board (same stacking context as
+    // Byte) so its root can sit BEHIND the body (#byte z25) while the hand stays in front
+    // of the pods (objectLayer z20). See .byte-stretch z-index:22.
+    const bo = board.getBoundingClientRect();
+    const ir = this.img.getBoundingClientRect();   // the no-hand turned sprite's box
+    const tr = targetEl.getBoundingClientRect();
     this.el.classList.toggle('reaching-left', dir < 0);
     this.el.classList.toggle('reaching-right', dir > 0);
 
-    // --- 9-slice geometry (render the 612x237 SVG at Byte's on-screen height) ---
-    const H = ir.height;                  // match Byte's height so the swap is seamless
-    const S = H / 237;                    // SVG units → screen px
-    const bodyW = 179 * S;                // body slice  (x 0..179)  — fixed
-    const capW  = 18  * S;                // hand  slice (x 594..612) — fixed
+    // STEP: empty shoulder socket of the no-hand sprite (board coords, tunable via SHOULDER_POINTS).
+    const sh = dir > 0 ? SHOULDER_POINTS.right : SHOULDER_POINTS.left;
+    const shoulderX = ir.left - bo.left + ir.width  * sh.x;
+    const shoulderY = ir.top  - bo.top  + ir.height * sh.y;
+    const tgtX = tr.left - bo.left + tr.width/2;
+    const tgtY = tr.top  - bo.top  + tr.height/2;
 
-    // The shoulder (body/tube seam) is the pivot: the arm grows AND rotates from it.
-    // Centre the SVG body over Byte; the shoulder is its inner edge toward the pod.
-    const sy = byteCy;                                  // tube sits at body mid-height
-    const originX = byteCx + dir * (bodyW / 2);         // shoulder X (screen)
+    // --- the arm: a cropped tube overlay scaled to a natural arm thickness; the
+    //     no-hand sprite stays visible underneath as the body. ---
+    const armH  = ir.height * ARM_THICK;       // on-screen tube thickness
+    const S     = armH / SVG_TUBE_THICK;       // SVG units → px (tube band is 29u tall)
+    const fullH = SVG_VB_H * S;                // full SVG frame height (mostly transparent)
+    const connW = ARM_CONN_U * S;              // fixed shoulder connector
+    const capW  = SVG_CAP_W  * S;              // fixed hand cap
 
-    // Aim: rotate the whole container so its local +x axis points at the pod.
-    const dx = tgt.x - originX, dy = tgt.y - sy;
-    const dist = Math.hypot(dx, dy);
-    const phi  = Math.atan2(dy, dx) * 180 / Math.PI;
-    // CSS `rotate(theta) scaleX(dir)` applies scaleX first, then rotate:
-    //   dir +1 → theta = phi ; dir -1 → theta = phi - 180  (mirror handles direction)
-    const theta = dir > 0 ? phi : phi - 180;
+    // aim shoulder → pod. Mirror for a left reach via scaleX(-1) (keeps the tube's shading
+    // and drop-shadow upright); rot compensates so the arm still points at the pod.
+    const dx = tgtX - shoulderX, dy = tgtY - shoulderY;
+    const dist0 = Math.hypot(dx, dy) || 1;
+    const angle = Math.atan2(dy, dx);                 // radians
+    const rot   = dir > 0 ? angle : angle + Math.PI;  // CSS: rotate(rot) scaleX(dir)
+    const ux = dx / dist0, uy = dy / dist0;
+    // STEP: tuck the root ARM_OVERLAP px back behind the shoulder edge to hide the seam.
+    const rootX = shoulderX - ARM_OVERLAP * ux;
+    const rootY = shoulderY - ARM_OVERLAP * uy;
+    const reach = dist0 + ARM_OVERLAP;                // hand still lands on the pod
 
-    // ANTICIPATION (120ms): wind up — lean away from the pod and stretch tall
-    const breath = this.el.querySelector('.byte-breath');
-    this.el.classList.add('anticipate');
-    breath.style.transform = `translateX(${-dir * 4}px) scale(.96, 1.04)`;
-    await sleep(120);
-    breath.style.transform = '';
-    this.el.classList.remove('anticipate');
-
-    // 1) hide byte.png and drop the SVG stretch container in its place
-    const stretch = document.createElement('div');
-    stretch.className = 'byte-stretch';
-    stretch.style.height = H + 'px';
-    stretch.style.left = (originX - bodyW) + 'px';      // body's left edge
-    stretch.style.top  = (sy - H / 2) + 'px';
-    stretch.style.transformOrigin = bodyW + 'px 50%';   // pivot at the shoulder
-    stretch.style.transform = `rotate(${theta}deg) scaleX(${dir})`;
-    stretch.innerHTML =
-      '<div class="stretch-body"></div>' +
+    // build the arm; left-center is the pivot, mirrored for a left reach.
+    const arm = document.createElement('div');
+    arm.className = 'byte-stretch';
+    arm.style.height = fullH + 'px';
+    arm.style.left = rootX + 'px';
+    arm.style.top  = (rootY - fullH / 2) + 'px';
+    arm.style.transformOrigin = 'left center';
+    arm.style.transform = `rotate(${rot}rad) scaleX(${dir})`;
+    arm.innerHTML =
+      '<div class="stretch-conn"></div>' +
       '<div class="stretch-middle"></div>' +
       '<div class="stretch-cap"></div>';
-    const body = stretch.children[0], middle = stretch.children[1], cap = stretch.children[2];
-    body.style.width = bodyW + 'px';
+    const conn = arm.children[0], middle = arm.children[1], cap = arm.children[2];
+    conn.style.width = connW + 'px';
     cap.style.width  = capW  + 'px';
-    sliceMiddle(middle, 0);                              // start collapsed (Byte + nub)
-    effectLayer.appendChild(stretch);
-    this.img.style.opacity = '0';                       // hide the normal Byte sprite
-    this.stretch = stretch; this.stretchMiddle = middle;
-    await sleep(60);
+    sliceMiddle(conn, connW);                  // connector = fixed uniform-tube segment
+    sliceMiddle(middle, 0);                    // tube starts collapsed
+    board.appendChild(arm);                    // behind Byte, in front of pods
+    this.stretch = arm; this.stretchMiddle = middle;
+    this._stretchRot = rot; this._stretchDir = dir;   // remembered for retraction
+
+    // blue shoulder JOINT (Byte's cyan material) capping the seam where the arm meets
+    // the body — sits above Byte at the shoulder so it reads as part of the body.
+    const joint = document.createElement('div');
+    joint.className = 'arm-joint';
+    joint.style.width = joint.style.height = (armH * 1.15) + 'px';
+    joint.style.left = shoulderX + 'px'; joint.style.top = shoulderY + 'px';
+    board.appendChild(joint); this._armJoint = joint;
 
     return new Promise(resolve => {
       playSound('arm');
-      // 5) tube length = reach from shoulder to pod, minus the rigid hand cap
-      const targetW = Math.max(0, dist - capW);
-      this._stretchTargetW = targetW;
+      // 2,3) tube length = reach minus the fixed connector + hand cap (only the tube
+      // animates 0 → target; connector & cap keep their size, so they never deform).
+      const targetW = Math.max(0, reach - connW - capW);
 
-      // bush is pierced when the hand cap reaches it (slightly early, ×0.9)
-      let bushThresh = Infinity, leafDone = false;
-      if (bush){
-        const bc = centerOf(bush.el);
-        const bd = Math.hypot(bc.x - originX, bc.y - sy);
-        bushThresh = Math.max(0, bd - capW) * 0.9;
-      }
-
-      // 6) fast-out / slow-in stretch — cubic-bezier(.22,1,.36,1)
+      // 2) fast-out / slow-in stretch — cubic-bezier(.22,1,.36,1), 550ms
       const ease = cubicBezier(0.22, 1, 0.36, 1);
       const DUR = 550, start = performance.now();
       const step = (now) => {
         const t = clamp((now - start) / DUR, 0, 1);
         let w = ease(t) * targetW;
-        // 7) tiny overshoot in the last 10%: +12px then settle
+        // tiny overshoot in the last 10%: +12px then settle
         if (t > 0.9){ const k = (t - 0.9) / 0.1; w = targetW + 12 * Math.sin(Math.PI * k); }
         sliceMiddle(middle, w);
-        if (!leafDone && bush && w >= bushThresh){
-          leafDone = true; bush.rustle();
-          const bc = centerOf(bush.el);
-          this.particles.emit('leaf', bc.x, bc.y - bush.el.clientHeight*0.2, 14);
-        }
         if (t < 1) requestAnimationFrame(step);
         else { sliceMiddle(middle, targetW); resolve(); }
       };
@@ -806,25 +1022,27 @@ class Byte {
     });
   }
 
-  /** Retract: collapse the tube width targetW → 0 (280ms), then remove the
-      stretch container and reveal byte.png again. */
+  /** Retract: collapse the whole arm scaleX(1→0) toward the shoulder (250ms), remove
+      the overlay, wait 100ms, then return to byte.png. */
   retractArm(){
     return new Promise(resolve => {
-      const stretch = this.stretch, middle = this.stretchMiddle;
-      const finish = () => {
-        this.el.classList.remove('reaching-left','reaching-right');
-        if (stretch) stretch.remove();
+      const arm = this.stretch;
+      const finish = async () => {
+        if (arm) arm.remove();
+        if (this._armJoint){ this._armJoint.remove(); this._armJoint = null; }
         this.stretch = null; this.stretchMiddle = null;
-        this.img.style.opacity = '';        // show the original Byte sprite again
+        this.el.classList.remove('reaching-left','reaching-right');
+        await sleep(100);          // beat after the stretch arm is gone
+        this.faceForward();        // return to byte.png
         resolve();
       };
-      if (!stretch || !middle){ finish(); return; }
-      const startW = this._stretchTargetW || 0;
-      const DUR = 280, start = performance.now();
+      if (!arm){ finish(); return; }
+      const rot = this._stretchRot || 0, dir = this._stretchDir || 1;
+      const DUR = 250, start = performance.now();
       const step = now => {
         const t = clamp((now - start) / DUR, 0, 1);
-        const w = startW * (1 - t * t);      // ease-in collapse, hand pulls back first
-        sliceMiddle(middle, w);
+        const k = 1 - t * t;       // ease-in collapse back into the shoulder
+        arm.style.transform = `rotate(${rot}rad) scaleX(${dir * k})`;
         if (t < 1) requestAnimationFrame(step);
         else finish();
       };
@@ -844,8 +1062,9 @@ class Byte {
 const POD_ART_DEFAULT = { closed: 'assets/Pod.png', open: 'assets/PodOpen.png' };
 
 class EnergyPod {
-  constructor({ leftPct, topPct, hasEnergy, hint, art = POD_ART_DEFAULT }){
+  constructor({ leftPct, topPct, hasEnergy, hint, side = 'left', art = POD_ART_DEFAULT }){
     this.hasEnergy = hasEnergy;
+    this.side = side;
     this.art = art;
     this.el = document.createElement('div');
     this.el.className = 'pod appear' + (hint ? ' hint' : '');
@@ -895,13 +1114,49 @@ class EnergyPod {
       <img class="pod-img" src="${art.closed}" alt="Energy pod" draggable="false" />
       <div class="pod-flash"></div>`;
     this.img = this.el.querySelector('.pod-img');
+    this._setFacing(false);               // closed art faces Byte
     objectLayer.appendChild(this.el);     // board child → grid-aligned
   }
   enableTap(handler){ this._h = () => handler(this); this.el.addEventListener('click', this._h); }
   disableTap(){ if (this._h) this.el.removeEventListener('click', this._h); }
 
-  /** lid pops off: swap this field's closed pod → its aligned open art */
-  open(){ playSound('pop'); this.img.src = this.art.open; this.el.classList.add('open','burst'); }
+  /** Face the red button toward the centre path (Byte) — left pod points right (+x),
+      right pod points left (-x) — and keep it consistent in BOTH closed and open states
+      so it never flips when the lid pops. Pod.png's button is +x, PodOpen.png's is -x. */
+  _setFacing(open){
+    const desired = this.side === 'left' ? 1 : -1;   // +x for left pod, -x for right pod
+    const artDir  = open ? -1 : 1;                    // natural button x-dir of the shown art
+    this.img.style.setProperty('--flip', desired * artDir);   // mirror only the .pod-img
+  }
+
+  /** lid pops off: swap closed → open art, and launch the cap off the screen */
+  open(){
+    playSound('cap');
+    this._setFacing(true);                // keep the button facing Byte in the open art
+    this.img.src = this.art.open;
+    this.el.classList.add('open','burst');
+    this._flyCap();
+  }
+
+  /** the red lid (PodCap.png) shoots up off the pod and out the top of the screen */
+  _flyCap(){
+    const c = centerOf(this.el);
+    const cap = document.createElement('img');
+    cap.className = 'pod-cap-fly';
+    cap.src = 'assets/PodCap.png'; cap.draggable = false;
+    cap.style.width = (this.el.clientWidth * 0.82) + 'px';
+    cap.style.left  = c.x + 'px';
+    cap.style.top   = (c.y - this.el.clientHeight * 0.42) + 'px';   // sit on the lid
+    effectLayer.appendChild(cap);
+    const dir  = this.side === 'left' ? -1 : 1;        // drift outward, away from Byte
+    const dx   = dir * (40 + Math.random() * 40);
+    const spin = dir * (220 + Math.random() * 160);
+    requestAnimationFrame(() => {
+      cap.style.top = (-this.el.clientHeight * 1.8) + 'px';         // fly off the top
+      cap.style.transform = `translate(calc(-50% + ${dx}px), -50%) rotate(${spin}deg) scale(.6)`;
+    });
+    setTimeout(() => cap.remove(), 950);
+  }
 
   shake(){ this.el.classList.add('shake'); setTimeout(()=>this.el.classList.remove('shake'),520); }
 
@@ -931,22 +1186,6 @@ class EnergyPod {
 EnergyPod._n = 0;
 
 /* ============================================================
-   Bush
-   ============================================================ */
-class Bush {
-  constructor({ leftPct, topPct }){
-    this.el = document.createElement('div');
-    this.el.className = 'bush';
-    this.el.style.left = leftPct + '%';
-    this.el.style.top  = topPct + '%';
-    this.el.innerHTML = '<span class="trunk"></span><span class="b1"></span><span class="b2"></span><span class="b3"></span><span class="b4"></span><span class="b5"></span><span class="b6"></span>';
-    objectLayer.appendChild(this.el);
-  }
-  rustle(){ this.el.classList.add('rustle'); setTimeout(()=>this.el.classList.remove('rustle'),500); }
-  destroy(){ this.el.remove(); }
-}
-
-/* ============================================================
    UIManager
    ============================================================ */
 class UIManager {
@@ -954,8 +1193,10 @@ class UIManager {
     this.instr   = $('#instruction');
     this.instrTxt= $('.txt', this.instr);
     this.cont    = $('.cont', this.instr);
-    this.hintChip= $('#hintChip');
+    this.instrPanel = $('#instrPanel');
+    this.ipText  = $('.ip-text', this.instrPanel);
     this.bigMsg  = $('#bigMsg');
+    this.welcome = $('#welcomeScene');
     this.fieldCurtain = $('#fieldCurtain');
     this.battery = { fill: $('#battery .fill'), pct: $('#battery .pct') };
     this.tapCatcher = $('#tapCatcher');
@@ -985,17 +1226,88 @@ class UIManager {
       this.tapCatcher.addEventListener('click', done);
     });
   }
-  showHint(text){ if (!text){ this.hideHint(); return; } this.hintChip.textContent = text; this.hintChip.classList.add('show'); }
-  hideHint(){ this.hintChip.classList.remove('show'); }
+  /** Show a pre-made DialoageBox image near a pod (arrow points at the pod), wait for a
+      tap, then dismiss. left → DialoageBox1 (tail top-left), right → DialoageBox2 (tail
+      top-right). Image only — bubble/arrow/text are baked into the asset. */
+  async showDialogue(podEl, side){
+    const cfg = side === 'left'
+      ? { src: 'assets/DialoageBox1.svg', tailX: 0.205 }   // tail tip ≈ 20% from box left
+      : { src: 'assets/DialoageBox2.svg', tailX: 0.855 };  // tail tip ≈ 85% from box left
+    const img = document.createElement('img');
+    img.className = 'tutorial-box'; img.src = cfg.src; img.alt = ''; img.draggable = false;
+    const boxW = stage.clientWidth * 0.20;
+    img.style.width = boxW + 'px';
+    effectLayer.appendChild(img);
+    // place the box just below the pod so its tail tip sits under the pod centre
+    const s = stage.getBoundingClientRect(), pr = podEl.getBoundingClientRect();
+    const podCx = pr.left - s.left + pr.width / 2;
+    const podBottom = pr.bottom - s.top;
+    img.style.left = (podCx - cfg.tailX * boxW) + 'px';
+    img.style.top  = (podBottom + stage.clientHeight * 0.012) + 'px';
+    requestAnimationFrame(() => img.classList.add('show'));   // opacity 0→1, translateY
+    await this.waitForTap();
+    img.classList.remove('show');
+    await sleep(260);
+    img.remove();
+  }
+  /** Big, playful "Welcome to the Energy Farm!" title — pops in, waits for a tap, fades. */
+  async showWelcome(){
+    this._spawnWelcomeSpecks();  // drifting cyan/yellow energy specks
+    this.welcome.classList.add('show');
+    await sleep(700);            // let the title bounce in before accepting a tap
+    await this.waitForTap();     // welcomeScene is pointer-events:none → tapCatcher gets the tap
+    this.welcome.classList.remove('show');
+    await sleep(450);
+    this.welcome.querySelectorAll('.welcome-particle').forEach(p => p.remove());
+  }
+  _spawnWelcomeSpecks(){
+    this.welcome.querySelectorAll('.welcome-particle').forEach(p => p.remove());
+    const cols = ['#5fe0ff', '#FFE14D', '#9ff0ff', '#FFE14D'];  // subtle cyan + energy yellow
+    for (let i = 0; i < 13; i++){
+      const p = document.createElement('div'); p.className = 'welcome-particle';
+      const sz = 3 + Math.random() * 5, c = cols[i % cols.length];
+      p.style.width = p.style.height = sz + 'px';
+      p.style.background = c;
+      p.style.opacity = .55;
+      p.style.boxShadow = `0 0 ${sz * 1.6}px ${sz * 0.4}px ${c}`;
+      p.style.left = (18 + Math.random() * 64) + '%';
+      p.style.top  = (42 + Math.random() * 30) + '%';
+      p.style.animationDuration = (5 + Math.random() * 4) + 's';   // slow upward drift
+      p.style.animationDelay = (Math.random() * 3.5) + 's';
+      this.welcome.appendChild(p);
+    }
+  }
+  /** Staged energy panel: bulb pops → glass panel expands → text fades in. Non-blocking. */
+  showHint(text){
+    clearTimeout(this._ipT1); clearTimeout(this._ipT2);
+    if (!text){ this.hideHint(); return; }
+    const p = this.instrPanel;
+    this.ipText.textContent = text;   // plain white text (no coloured keywords)
+    p.classList.add('show');
+    if (p.classList.contains('panel-open')){            // retry: panel already open, just replay text
+      p.classList.remove('text-in'); void this.ipText.offsetWidth; p.classList.add('text-in');
+      return;
+    }
+    requestAnimationFrame(() => {
+      p.classList.add('bulb-in');                       // 1. bulb pops in
+      this._ipT1 = setTimeout(() => p.classList.add('panel-open'), 420);  // 2. panel expands
+      this._ipT2 = setTimeout(() => p.classList.add('text-in'),   920);   // 3. text fades up
+    });
+  }
+  hideHint(){
+    clearTimeout(this._ipT1); clearTimeout(this._ipT2);
+    this.instrPanel.classList.remove('show','bulb-in','panel-open','text-in');
+  }
   async bigMessage(text, ms = 1600){
     this.bigMsg.textContent = text; this.bigMsg.classList.add('show');
     await sleep(ms); this.bigMsg.classList.remove('show'); await sleep(350);
   }
-  async fieldTransition(label){
+  async fieldTransition(label, onCover){
     this.fieldCurtain.textContent = label;
     this.fieldCurtain.classList.remove('hide-up');
     this.fieldCurtain.classList.add('show');
     await sleep(720);
+    if (onCover) onCover();          // curtain fully covers the screen → safe to swap the farm
     this.fieldCurtain.classList.add('hide-up');
     await sleep(650);
     this.fieldCurtain.classList.remove('show','hide-up');
@@ -1022,9 +1334,35 @@ class UIManager {
 /* ============================================================
    GameManager — flow & state machine
    ============================================================ */
-/* pods sit on real grass columns (3 out from the path); bush one column nearer */
-const LEFT_X = 30.57, RIGHT_X = 69.53;       // pod columns (board %)
-const BUSH_X = { left: 37.19, right: 62.97 }; // bush column between Byte and pod
+/* Pods sit on grass tile columns out from the centre path (grass column step ≈ 6.52% of
+   board width; the path is PATH_X). Distances are intentionally ASYMMETRIC: the left pod
+   is nearer (3rd tile), the right pod stays on the 5th tile. */
+const COL_STEP = 6.52;                        // grass column width (board %)
+const LEFT_OFFSET  = 3;                        // left pod  → 3rd grass tile from centre
+const RIGHT_OFFSET = 5;                        // right pod → 5th grass tile from centre (unchanged)
+const LEFT_X  = PATH_X - LEFT_OFFSET  * COL_STEP;   // ≈ 30.57 (3rd tile)
+const RIGHT_X = PATH_X + RIGHT_OFFSET * COL_STEP;   // ≈ 82.73 (5th tile, unchanged)
+/* Pods share Byte's tile row (PLAY_TILE) so the stretch arm travels straight across. */
+const POD_ROW_Y = PLAY_TILE;                  // same row as Byte → horizontal reach
+
+/* Near/Far puzzle levels (user Levels 2-9). Each: a farm background SVG plus the left &
+   right pod distances FROM BYTE, in grass tiles (pod X = pathwayX ± COL_STEP·distance).
+   `pathwayX` is the board-% X of that background's VERTICAL DIRT PATHWAY — Byte stands on
+   it and it anchors all pod placement. These were measured once from each SVG (the runtime
+   pixel-scan can't run from file:// — tainted-canvas — so the anchors are baked in here).
+   Distances are intentionally asymmetric — that's what the near/far instruction tests. */
+const LEVEL_CONFIG = {
+  2: { background: 'Background1.svg', pathwayX: 30.10, leftDistance: 1, rightDistance: 6 },
+  3: { background: 'Background2.svg', pathwayX: 69.48, leftDistance: 2, rightDistance: 5 },
+  4: { background: 'Background3.svg', pathwayX: 43.23, leftDistance: 3, rightDistance: 4 },
+  5: { background: 'Background4.svg', pathwayX: 50.10, leftDistance: 5, rightDistance: 3 },
+  6: { background: 'Background5.svg', pathwayX: 36.56, leftDistance: 4, rightDistance: 1 },
+  7: { background: 'Background6.svg', pathwayX: 63.02, leftDistance: 5, rightDistance: 2 },
+  8: { background: 'Background7.svg', pathwayX: 17.19, leftDistance: 1, rightDistance: 5 },
+  9: { background: 'Background8.svg', pathwayX: 23.65, leftDistance: 2, rightDistance: 4 },
+};
+
+const POD_EDGE = 7;   // keep pods at least this % in from the board edges (stay tappable)
 
 class GameManager {
   constructor(){
@@ -1032,29 +1370,29 @@ class GameManager {
     this.ui   = new UIManager();
     this.byte = new Byte($('#byte'), this.particles);
     this.pods = [];
-    this.bush = null;
     this.busy = false;
     this.canTap = false;
 
-    /* Every level is staged on the same playable tile; after a clear, Byte
-       leaves the screen and returns in a visually new field. */
+    /* Level 0 = the tutorial (unchanged). Levels 1-8 are the Near/Far puzzle levels
+       (user Levels 2-9), generated from LEVEL_CONFIG: each is a `puzzle` with its own
+       farm background and left/right pod distances. */
     this.levels = [
-      { byteTop: PLAY_TILE, hint:false, bush:false,
-        art:{ closed:'assets/Pod.png', open:'assets/PodOpen.png' },
+      // Level 1 (tutorial): the LEFT pod is the near one and holds the cell, so the
+      // pod-choice shows the "near" instruction to introduce the Near/Far idea.
+      { byteTop: PLAY_TILE, hint:false,
         layout:[{side:'left',energy:true},{side:'right',energy:false}],
-        hintText:'' },
-      { byteTop: PLAY_TILE, hint:false, bush:true,
-        // NOTE: these two files are mislabelled — Pod2Open.png is the lid-on (closed)
-        // art and Pod2Closed.png is the lid-off (open) art, so they're mapped crossed.
-        art:{ closed:'assets/Pod2Open.png', open:'assets/Pod2Closed.png', ratio:'336/469', width:6.4 },
-        layout:[{side:'left',energy:false},{side:'right',energy:true}],
-        hintText:'A bush is in the way. Tap a pod and Byte will reach through!' },
-      { byteTop: PLAY_TILE, hint:false, bush:false, random:true,
-        art:{ closed:'assets/Pod3.png', open:'assets/Pod3Open.png', ratio:'334/439', width:6.4 },
-        layout:[{side:'left',energy:false},{side:'right',energy:false}],
-        hintText:'New field, new choice. Tap any pod to find the energy!' },
+        hintText:'The pod near Byte has a cell. Tap on the pod near Byte.' },
     ];
+    for (let n = 2; n <= 9; n++){
+      const c = LEVEL_CONFIG[n];
+      this.levels.push({ byteTop: PLAY_TILE, puzzle:true, background: c.background,
+        pathwayX: c.pathwayX, leftDistance: c.leftDistance, rightDistance: c.rightDistance });
+    }
     this.level = 0;
+    this._instructionType = 'near';
+    this._pathX = PATH_X;        // the current level's dirt-pathway column (board %)
+    // preload the farm backgrounds so the per-level swap is instant (no flash)
+    for (let n = 2; n <= 9; n++){ const im = new Image(); im.src = `assets/${LEVEL_CONFIG[n].background}`; }
 
     $('#replayBtn').addEventListener('click', () => this.restart());
     const sndBtn = $('#sndBtn');
@@ -1071,6 +1409,7 @@ class GameManager {
     this.ui.hideHint();
     this.ui.hideTile();
     this.byte.faceForward();
+    this._pathX = PATH_X; this._placeByteColumn(PATH_X);   // tutorial: centre pathway
     this.byte.setTopPercent(ENTER_FROM, true);
     await sleep(200);
     await this.byte.slideTo(this.levels[0].byteTop, { duration: 3400 });
@@ -1082,18 +1421,42 @@ class GameManager {
   }
 
   setField(index){
-    board.classList.remove('field-1','field-2');
-    if (index > 0) board.classList.add(`field-${index}`);
+    board.classList.remove('field-1','field-2');   // no colour tint on the puzzle farms
+    const cfg = this.levels[index];
+    // Puzzle levels swap the farm SVG; the tutorial uses the CSS default (Background.svg).
+    // Only the background-image changes — CSS keeps size (100% 100%) + centre, so the
+    // 1920×1080 SVGs cover the board responsively with no distortion.
+    board.style.backgroundImage = (cfg && cfg.puzzle) ? `url('assets/${cfg.background}')` : '';
+  }
+
+  /** The current level's vertical-pathway column (board %). Tutorial uses the centre path
+      (PATH_X); each puzzle level uses its background's baked-in pathwayX anchor. */
+  _resolvePathX(){
+    const cfg = this.levels[this.level];
+    this._pathX = (cfg && cfg.puzzle && cfg.pathwayX != null) ? cfg.pathwayX : PATH_X;
+    return this._pathX;
+  }
+
+  /** Put Byte (and its glow tile) on a given pathway column, so Byte stands ON the path
+      and walks straight up it. x is a board %. */
+  _placeByteColumn(x){
+    this.byte.el.style.left = x + '%';
+    this.ui.tile.style.left = x + '%';
   }
 
   async runIntro(){
-    await this.ui.showText('Welcome to the Energy Farm!');
-    this.spawnPods(this.levels[0], false);      // pods appear while we talk about them
-    this.pods.forEach(p => p.el.classList.add('glow'));   // BOTH pods pulse during these lines
-    await this.ui.showText('Energy is stored here as coins inside these pods.');
-    await this.ui.showText('Some pods have the energy coin while some do not.');
-    this.pods.forEach(p => p.el.classList.remove('glow'));
-    this.ui.hideInstruction();
+    await this.ui.showWelcome();                 // big playful "Welcome to the Energy Farm!" title
+    this.spawnPods(this.levels[0], false);      // pods appear for the intro
+    const left  = this.pods.find(p => p.side === 'left');
+    const right = this.pods.find(p => p.side === 'right');
+    // Scene 2 → glow + DialoageBox1 on the LEFT pod only
+    left.el.classList.add('glow');
+    await this.ui.showDialogue(left.el, 'left');
+    left.el.classList.remove('glow');
+    // Scene 3 → glow + DialoageBox2 on the RIGHT pod only
+    right.el.classList.add('glow');
+    await this.ui.showDialogue(right.el, 'right');
+    right.el.classList.remove('glow');
     await sleep(300);
   }
 
@@ -1101,7 +1464,21 @@ class GameManager {
 
   spawnPods(cfg, withHint = true){
     this.pods.forEach(p => p.destroy()); this.pods = [];
-    if (this.bush){ this.bush.destroy(); this.bush = null; }
+
+    if (cfg.puzzle){
+      // Tile-based placement FROM THE PATHWAY COLUMN: podX = pathX ± tile·distance.
+      // (this._pathX is this background's baked pathway anchor — same column Byte stands on.)
+      // Clamp to the board so a far pod stays on-screen/tappable.
+      const px = this._pathX;
+      const leftX  = clamp(px - cfg.leftDistance  * COL_STEP, POD_EDGE, 100 - POD_EDGE);
+      const rightX = clamp(px + cfg.rightDistance * COL_STEP, POD_EDGE, 100 - POD_EDGE);
+      // Energy goes in the near or far pod per the chosen instruction & the TILE distances.
+      const leftIsNear   = cfg.leftDistance <= cfg.rightDistance;
+      const energyOnLeft = (this._instructionType === 'near') === leftIsNear;
+      this.pods.push(new EnergyPod({ leftPct: leftX,  topPct: POD_ROW_Y, hasEnergy: energyOnLeft,  hint:false, side:'left'  }));
+      this.pods.push(new EnergyPod({ leftPct: rightX, topPct: POD_ROW_Y, hasEnergy: !energyOnLeft, hint:false, side:'right' }));
+      return;
+    }
 
     let layout = cfg.layout.map(o => ({ ...o }));
     if (cfg.random){
@@ -1110,24 +1487,35 @@ class GameManager {
     }
     layout.forEach(o => {
       const pod = new EnergyPod({
-        leftPct: this._x(o.side), topPct: cfg.byteTop,   // same path row → horizontal reach
+        leftPct: this._x(o.side), topPct: POD_ROW_Y,   // mid-field tile row, above Byte
         hasEnergy: o.energy, hint: withHint && cfg.hint && o.energy,
-        art: cfg.art || POD_ART_DEFAULT,
+        side: o.side, art: cfg.art || POD_ART_DEFAULT,
       });
-      pod.side = o.side; this.pods.push(pod);
+      this.pods.push(pod);
     });
-    if (cfg.bush){
-      const energy = layout.find(o => o.energy);
-      this.bush = new Bush({ leftPct: BUSH_X[energy.side], topPct: cfg.byteTop });
+  }
+
+  /** Instruction / hint text for the current level (Near/Far directive for puzzles). */
+  _levelHintText(){
+    const cfg = this.levels[this.level];
+    if (cfg && cfg.puzzle){
+      return this._instructionType === 'near'
+        ? 'The pod near Byte has a cell. Tap on the pod near Byte.'
+        : 'The pod far from Byte has a cell. Tap on the pod far from Byte.';
     }
+    return cfg ? (cfg.hintText || '') : '';
   }
 
   async beginLevel(){
     const cfg = this.levels[this.level];
     this.setField(this.level);
-    this.spawnPods(cfg, true);
+    this._resolvePathX();                    // pathway column for this background
+    this._placeByteColumn(this._pathX);      // Byte stands ON the pathway
+    // Puzzle levels: randomly test "near" or "far" — this decides which pod holds energy.
+    if (cfg.puzzle) this._instructionType = Math.random() < 0.5 ? 'near' : 'far';
+    this.spawnPods(cfg, true);               // pods placed left/right of the pathway
     this.ui.moveTile(cfg.byteTop);
-    this.ui.showHint(cfg.hintText);
+    this.ui.showHint(this._levelHintText());
     await this.byte.scan();
     this.pods.forEach(p => p.enableTap(pod => this.handlePodTap(pod)));
     this.canTap = true;
@@ -1140,8 +1528,7 @@ class GameManager {
     this.pods.forEach(p => p.disableTap());
     this.ui.hideHint();
     this.byte.turnTo(pod);                   // turn toward the pod being checked (with servo whir)
-    const bushInPath = (this.bush && pod.hasEnergy) ? this.bush : null;
-    await this.byte.extendArm(pod.el, bushInPath);
+    await this.byte.extendArm(pod.el);
     await sleep(120);
     if (pod.hasEnergy) await this.correctSequence(pod);
     else               await this.wrongSequence(pod);
@@ -1188,8 +1575,6 @@ class GameManager {
     await sleep(700);
     this.byte.stopCharge(); this.byte.faceForward();
 
-    await this.ui.bigMessage('Great! Byte found energy! ⚡', 1500);
-
     this.level++;
     if (this.level >= this.levels.length) await this.win();
     else await this.advanceLevel();
@@ -1206,7 +1591,7 @@ class GameManager {
     this.byte.faceForward();
     pod.reset();
     await sleep(200);
-    this.ui.showHint(this.levels[this.level].hintText);
+    this.ui.showHint(this._levelHintText());   // re-show the same instruction for the retry
     this.pods.forEach(p => p.enableTap(pp => this.handlePodTap(pp)));
     this.canTap = true; this.busy = false;
   }
@@ -1214,7 +1599,6 @@ class GameManager {
   async advanceLevel(){
     this.pods.forEach(p => { p.el.style.opacity='0';
       p.el.style.transform='translate(-50%,-30%) scale(.6)'; });
-    if (this.bush){ this.bush.el.style.transition='opacity .4s ease'; this.bush.el.style.opacity='0'; }
     await sleep(420);
 
     this.ui.hideHint();
@@ -1222,14 +1606,16 @@ class GameManager {
     this.byte.faceForward();
     await this.byte.slideTo(EXIT_TO, { duration: 1900 });
     this.pods.forEach(p => p.destroy()); this.pods = [];
-    if (this.bush){ this.bush.destroy(); this.bush = null; }
 
-    await this.ui.fieldTransition(`Field ${this.level + 1}`);
-    this.setField(this.level);
+    // swap the farm background UNDER the curtain so the change is a smooth fade
+    await this.ui.fieldTransition(`Field ${this.level + 1}`, () => this.setField(this.level));
     const cfg = this.levels[this.level];
+    // resolve the NEW farm's pathway and stand Byte on it BEFORE walking up from the bottom
+    this._resolvePathX();
+    this._placeByteColumn(this._pathX);
     this.byte.setTopPercent(ENTER_FROM, true);
     await sleep(120);
-    await this.byte.slideTo(cfg.byteTop, { duration: 2200 });
+    await this.byte.slideTo(cfg.byteTop, { duration: 2200 });   // walk up the pathway
     this.ui.moveTile(cfg.byteTop);
     await sleep(150);
     await this.beginLevel();
@@ -1247,7 +1633,6 @@ class GameManager {
   restart(){
     $('#win').classList.remove('show');
     this.pods.forEach(p => p.destroy()); this.pods = [];
-    if (this.bush){ this.bush.destroy(); this.bush = null; }
     this.level = 0; this.busy = false; this.canTap = false;
     this.ui.hideHint();
     this.start();
