@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node drive.js)",
+      "Bash(node selector_test.js)",
+      "Bash(node reach.js)",
+      "Bash(node /tmp/armcheck2.js)",
+      "Bash(node -e ' *)"
+    ],
+    "additionalDirectories": [
+      "/tmp/bytetest",
+      "/private/tmp/bytetest"
+    ]
+  }
+}
