@@ -9,7 +9,9 @@
     ],
     "additionalDirectories": [
       "/tmp/bytetest",
-      "/private/tmp/bytetest"
+      "/private/tmp/bytetest",
+      "/tmp",
+      "/private/tmp"
     ]
   }
 }

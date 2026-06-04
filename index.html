@@ -248,10 +248,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* bunny that rises out of a wrong (empty) pod — sits UPON the pod's opening.
    Sized by pod HEIGHT (not width) so it stays the same size on every pod shape. */
 .pod .pod-bunny{position:absolute;left:50%;bottom:58%;width:auto;height:78%;z-index:3;
-  transform-origin:50% 100%;transform:translate(-50%,55%) scale(.3);opacity:0;pointer-events:none;}
+  transform-origin:50% 100%;transform:translate(-50%,55%) scale(.3) scaleX(var(--bflip,1));opacity:0;pointer-events:none;}
 .pod.bunny-out .pod-bunny{animation:bunnyRise .92s cubic-bezier(.34,1.55,.5,1) forwards;}
-@keyframes bunnyRise{0%{transform:translate(-50%,55%) scale(.35);opacity:0}
-  60%{transform:translate(-50%,-6%) scale(1.05);opacity:1}100%{transform:translate(-50%,0) scale(1);opacity:1}}
+/* --bflip mirrors the bunny art so it FACES Byte (left pod = -1 → faces right toward Byte; right pod
+   = 1, art already faces left toward Byte). Baked into every keyframe so the rise can't undo it. */
+@keyframes bunnyRise{0%{transform:translate(-50%,55%) scale(.35) scaleX(var(--bflip,1));opacity:0}
+  60%{transform:translate(-50%,-6%) scale(1.05) scaleX(var(--bflip,1));opacity:1}100%{transform:translate(-50%,0) scale(1) scaleX(var(--bflip,1));opacity:1}}
 
 /* the lid (PodCap.png) launches off the pod and flies out the top of the screen */
 .pod-cap-fly{position:absolute;transform:translate(-50%,-50%);z-index:46;pointer-events:none;
@@ -370,7 +372,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* ── Instruction panel: the InstructionPanel.svg banner (cream, soft green border) with the
    instruction text centred on it. The panel pops in, then the text fades up — with the near/far
    keyword in red so it stands out. ── */
-#instrPanel{position:absolute;left:50%;top:clamp(8px,3vh,34px);transform:translateX(-50%);
+#instrPanel{position:absolute;left:50%;top:clamp(0px,1vh,14px);transform:translateX(-50%);
   width:clamp(300px,58vw,660px);max-width:92vw;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s;}
 #instrPanel.show{opacity:1;visibility:visible;}
@@ -382,12 +384,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* instruction text, centred over the panel — dark navy on the cream panel, keyword in red.
    Absolute-centred (no grid/flex, which collapse the run to min-content) inside 86% of the panel
    width so it wraps normally to 1–2 lines and stays within the banner. */
-#instrPanel .ip-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:88%;text-align:center;color:#1B334E;font-weight:800;
-  font-size:clamp(14px,3vw,23px);line-height:1.22;
+#instrPanel .ip-text{position:absolute;top:54%;left:50%;transform:translate(-50%,-50%);
+  width:88%;text-align:center;color:#1B334E;font-weight:600;
+  font-size:clamp(17px,3.7vw,28px);line-height:1.22;
   opacity:0;transition:opacity .42s ease;}
 #instrPanel.text-in .ip-text{opacity:1;}
-#instrPanel .ip-text .kw{color:#D63C06;}   /* highlighted keyword (near / far) */
+#instrPanel .ip-text .kw{color:#6A70E3;}   /* highlighted keyword (near / far) */
 
 #bigMsg{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);
   color:#fff;font-weight:900;text-align:center;opacity:0;pointer-events:none;z-index:75;
@@ -395,77 +397,42 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.6,.5,1);}
 #bigMsg.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
-/* ── Cloud transition (between fields): three layered fluffy cloud banks drift in from each side
-     with PARALLAX (front fast → back medium → mist slow), meet with a soft overshoot "squish" for
-     a magical whiteout, float energy sparks through the clouds, surface the label, then part with
-     the mist trailing last. Pure transform + opacity. Drives off the existing .show / .closed /
-     .part classes — the JS flow is unchanged. ── */
+/* ── Cloud transition (between fields): two banks built from the real cloud art
+     (assets/clouds/cloudN.svg, sliced out of MultipleCloudAssets.svg) drift in from the left and
+     right over a sky-blue sky, meet to blanket the centre (~96% covered), hold, then part back out
+     to the sides. The curtain's opaque sky-blue background IS the sky (and what hides the field
+     swap); the cloud images are layered decoration — a softer BACK layer for depth + a bright
+     FRONT layer. Drives off the existing .show / .closed / .part classes — JS flow is unchanged. ── */
 #fieldCurtain{position:absolute;inset:0;z-index:82;pointer-events:none;overflow:hidden;
-  opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s;}
+  --sky:#71B6E3;
+  background:var(--sky);                        /* sky-blue sky behind the clouds */
+  opacity:0;visibility:hidden;transition:opacity .2s ease, visibility .2s;}
 #fieldCurtain.show{opacity:1;visibility:visible;}
-/* each bank covers >half the screen so the two banks overlap into a solid cloudy centre */
-#fieldCurtain .cloud-bank{position:absolute;top:0;height:100%;width:70%;}
-#fieldCurtain .cb-left{left:0;}
+/* each bank is wide enough that the two banks overlap into a near-solid cloudy centre */
+#fieldCurtain .cloud-bank{position:absolute;top:0;height:100%;width:88%;}
+#fieldCurtain .cb-left {left:0;}
 #fieldCurtain .cb-right{right:0;}
-/* the three parallax layers — each starts fully off its own side */
-#fieldCurtain .cloud-layer{position:absolute;inset:-14% 0;will-change:transform,opacity;}
-#fieldCurtain .cb-left  .cloud-layer{transform:translateX(-118%);}
-#fieldCurtain .cb-right .cloud-layer{transform:translateX(118%);}
-/* drift-in: front fast, back medium, mist slow (depth). Overshoot curves give a gentle squish
-   as the cloud fronts meet in the centre. */
-#fieldCurtain .cl-front{transition:transform .7s cubic-bezier(.32,1.4,.5,1);}
-#fieldCurtain .cl-back {transition:transform .9s cubic-bezier(.38,1.14,.5,1);}
-#fieldCurtain .cl-mist {transition:transform 1.1s ease;}
-#fieldCurtain.show .cloud-layer{transform:translateX(0);}         /* clouds meet in the middle */
-/* part: layers retreat to their own sides; mist trails LAST (longest + delayed) */
-#fieldCurtain.part .cb-left  .cloud-layer{transform:translateX(-118%);}
-#fieldCurtain.part .cb-right .cloud-layer{transform:translateX(118%);}
-#fieldCurtain.part .cl-front{transition:transform .6s ease-in;}
-#fieldCurtain.part .cl-back {transition:transform .78s ease-in .07s;}
-#fieldCurtain.part .cl-mist {transition:transform 1s ease-in .2s;}
+#fieldCurtain .cb-right .clouds{transform:scaleX(-1);}      /* mirror the right bank so it isn't a copy
+                                                               (also flips each cloud's slide direction) */
+#fieldCurtain .clouds{position:absolute;inset:0;}
+/* Per-CLOUD slide (not a rigid bank): every cloud starts off its own side (translateX), slides to 0
+   to meet, then retreats — each with its OWN --din / --dout delay so they DON'T leave all at once.
+   scaleX(-1) on the right bank flips the X direction automatically, so --ox keeps one sign. */
+#fieldCurtain .cloud{position:absolute;height:auto;display:block;will-change:transform;
+  filter:drop-shadow(0 8px 16px rgba(40,90,120,.14));
+  transform:translateX(-128vw);
+  transition:transform .66s cubic-bezier(.30,1.16,.5,1) var(--din,0s);}   /* drift in, soft settle */
+#fieldCurtain.show .cloud{transform:translateX(0);}                       /* clouds meet in the middle */
+#fieldCurtain.part .cloud{transform:translateX(-128vw);                   /* …then stagger back out */
+  transition:transform .60s cubic-bezier(.55,0,.85,.4) var(--dout,0s);}
+#fieldCurtain .clouds.back {z-index:1;opacity:.97;filter:saturate(.95) brightness(.98);}
+#fieldCurtain .clouds.front{z-index:2;}
 
-/* Layer 1 — big soft cloud body: pure-white core feathering to light blue at the centre-facing
-   edge via a RADIAL gradient (no straight rectangular edge), softened with a light blur. */
-#fieldCurtain .cl-back{filter:blur(2px);}
-#fieldCurtain .cb-left  .cl-back{background:radial-gradient(105% 135% at 0% 50%, #fff 52%, #e9f3ff 74%, rgba(219,236,255,0) 95%);}
-#fieldCurtain .cb-right .cl-back{background:radial-gradient(105% 135% at 100% 50%, #fff 52%, #e9f3ff 74%, rgba(219,236,255,0) 95%);}
-/* fluffy rounded clouds — white core, soft light-blue edge, no hard borders. blob = large body
-   shapes (back layer); puff = smaller overlapping shapes (front layer). */
-#fieldCurtain .blob,#fieldCurtain .puff{position:absolute;border-radius:50%;
-  background:radial-gradient(circle at 40% 34%, #fff 56%, #eaf4ff 73%, rgba(213,233,255,0) 82%);}
-#fieldCurtain .blob{filter:drop-shadow(0 12px 24px rgba(118,158,210,.18));}
-#fieldCurtain .puff{filter:drop-shadow(0 7px 15px rgba(118,158,210,.15));}
-/* back blobs (large) */
-#fieldCurtain .b1{width:48vh;height:48vh;top:-10vh;}
-#fieldCurtain .b2{width:60vh;height:60vh;top:16vh;}
-#fieldCurtain .b3{width:52vh;height:52vh;bottom:2vh;}
-#fieldCurtain .b4{width:42vh;height:42vh;bottom:-14vh;}
-#fieldCurtain .cb-left  .b1{right:-16vh;} #fieldCurtain .cb-right .b1{left:-16vh;}
-#fieldCurtain .cb-left  .b2{right:-20vh;} #fieldCurtain .cb-right .b2{left:-20vh;}
-#fieldCurtain .cb-left  .b3{right:-12vh;} #fieldCurtain .cb-right .b3{left:-12vh;}
-#fieldCurtain .cb-left  .b4{right:-22vh;} #fieldCurtain .cb-right .b4{left:-22vh;}
-/* front puffs (smaller, overlapping, varied) */
-#fieldCurtain .f1{width:24vh;height:24vh;top:-4vh;}
-#fieldCurtain .f2{width:34vh;height:34vh;top:14vh;}
-#fieldCurtain .f3{width:28vh;height:28vh;top:42vh;}
-#fieldCurtain .f4{width:36vh;height:36vh;bottom:2vh;}
-#fieldCurtain .f5{width:22vh;height:22vh;bottom:-8vh;}
-#fieldCurtain .cb-left  .f1{right:-8vh;}  #fieldCurtain .cb-right .f1{left:-8vh;}
-#fieldCurtain .cb-left  .f2{right:-13vh;} #fieldCurtain .cb-right .f2{left:-13vh;}
-#fieldCurtain .cb-left  .f3{right:-6vh;}  #fieldCurtain .cb-right .f3{left:-6vh;}
-#fieldCurtain .cb-left  .f4{right:-14vh;} #fieldCurtain .cb-right .f4{left:-14vh;}
-#fieldCurtain .cb-left  .f5{right:7vh;}   #fieldCurtain .cb-right .f5{left:7vh;}
-
-/* Layer 3 — semi-transparent drifting mist/fog that softens the whole whiteout */
-#fieldCurtain .cl-mist{filter:blur(11px);}
-#fieldCurtain .cb-left  .cl-mist{background:radial-gradient(120% 110% at 25% 50%, rgba(255,255,255,.72) 38%, rgba(223,239,255,.34) 70%, rgba(223,239,255,0) 100%);}
-#fieldCurtain .cb-right .cl-mist{background:radial-gradient(120% 110% at 75% 50%, rgba(255,255,255,.72) 38%, rgba(223,239,255,.34) 70%, rgba(223,239,255,0) 100%);}
-
-/* The field label — surfaces from INSIDE the clouds: scale-up + float-up + fade once closed */
+/* The field label — surfaces from inside the clouds: scale-up + float-up + fade once closed */
 #fieldCurtain .fc-label{position:absolute;left:50%;top:50%;z-index:6;
-  transform:translate(-50%,-42%) scale(.8);color:#3f7fb5;font-weight:900;
+  transform:translate(-50%,-42%) scale(.8);color:#fff;font-weight:900;
   font-size:clamp(26px,7vw,52px);
-  text-shadow:0 2px 0 #dcefff, 0 0 22px rgba(255,255,255,.92), 0 9px 20px rgba(90,140,190,.25);
+  text-shadow:0 2px 0 rgba(44,94,112,.35), 0 0 22px rgba(180,224,232,.9), 0 9px 20px rgba(18,64,82,.3);
   opacity:0;transition:opacity .45s ease, transform .5s cubic-bezier(.34,1.5,.5,1);}
 #fieldCurtain.closed .fc-label{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
@@ -515,18 +482,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes welcomeSpeck{0%{transform:translateY(0) scale(1);opacity:0}
   20%{opacity:.5}80%{opacity:.35}100%{transform:translateY(-130px) scale(.5);opacity:0}}
 
-#sndBtn{position:absolute;top:clamp(12px,3vh,22px);right:clamp(12px,3vw,20px);
-  width:clamp(40px,10vw,50px);height:clamp(40px,10vw,50px);border-radius:50%;border:none;
-  background:rgba(255,255,255,.9);box-shadow:0 5px 14px rgba(0,0,0,.2);cursor:pointer;
-  font-size:clamp(18px,5vw,24px);z-index:72;pointer-events:auto;
-  display:grid;place-items:center;transition:transform .12s ease;}
-#sndBtn:active{transform:scale(.9);}
-#sndBtn img{width:62%;height:62%;object-fit:contain;pointer-events:none;}
-/* muted state: dim the speaker + draw a red diagonal slash through it */
-#sndBtn.muted img{opacity:.5;}
-#sndBtn.muted::after{content:"";position:absolute;top:50%;left:50%;width:70%;height:3px;
-  border-radius:2px;background:#e23b3b;transform:translate(-50%,-50%) rotate(-45deg);
-  box-shadow:0 0 0 1.5px rgba(255,255,255,.9);}
 
 /* ---------- Start gate ---------- */
 #startScreen{position:absolute;inset:0;z-index:95;cursor:pointer;
@@ -534,11 +489,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:opacity .5s ease;}
 #startScreen.hide{opacity:0;pointer-events:none;}
 /* Glossy green 3D PLAY button (bottom-right), matching the splash art style */
-#startScreen .play-btn{position:absolute;right:5%;bottom:9%;
-  display:flex;align-items:center;gap:.38em;
+#startScreen .play-btn{position:absolute;right:9%;bottom:9%;
+  display:flex;align-items:center;justify-content:center;gap:.38em;
   font-family:inherit;font-weight:900;font-size:clamp(20px,5vw,40px);letter-spacing:.05em;
   color:#fff;text-shadow:0 2px 0 rgba(20,80,10,.5),0 4px 7px rgba(0,0,0,.3);
-  padding:.4em 1.1em .46em;border-radius:999px;cursor:pointer;
+  padding:.4em 1.7em .46em;border-radius:999px;cursor:pointer;
   border:4px solid #f0fff2;
   background:linear-gradient(#a6ec53,#6cc028 55%,#54a31d);
   box-shadow:0 9px 0 #357c14, 0 14px 20px rgba(0,0,0,.32),
@@ -548,10 +503,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 #startScreen .play-btn:active{animation:none;transform:translateY(5px);
   box-shadow:0 3px 0 #357c14, 0 6px 10px rgba(0,0,0,.32),
              inset 0 4px 5px rgba(255,255,255,.55), inset 0 -6px 9px rgba(20,70,0,.28);}
-/* white play triangle */
-#startScreen .play-btn::before{content:"";width:0;height:0;border-style:solid;
-  border-width:.4em 0 .4em .62em;border-color:transparent transparent transparent #fff;
-  filter:drop-shadow(0 2px 1px rgba(20,70,0,.35));}
 @keyframes playPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
 
 /* ---------- Rotate-to-landscape overlay (portrait orientation) ----------
@@ -660,25 +611,78 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
     <div id="welcomeScene">
       <div class="welcome-glow"></div>
       <img class="welcome-title" src="assets/WelcomeText.svg" alt="Welcome to the Energy Farm!" draggable="false" />
-      <div class="welcome-sub"><span class="play-tri">▶</span> tap to start</div>
     </div>
     <div id="fieldCurtain">
       <div class="cloud-bank cb-left">
-        <div class="cloud-layer cl-mist"></div>
-        <div class="cloud-layer cl-back">
-          <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+        <div class="clouds back">
+          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:64vh;top:-8%;left:2%;--din:.05s;--dout:.08s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:58vh;top:16%;left:-8%;--din:.10s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:70vh;top:37%;left:-6%;--din:.06s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:52vh;top:58%;left:-8%;--din:.12s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud3.svg" alt="" draggable="false" style="width:42vh;top:78%;left:0%;--din:.08s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:50vh;top:28%;left:34%;--din:.14s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:26vh;top:7%;left:36%;--din:.18s;--dout:.34s">
+          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:44vh;top:45%;left:14%;--din:.04s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:2%;left:-12%;--din:.09s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:54vh;top:50%;left:-12%;--din:.11s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:50vh;top:72%;left:-12%;--din:.07s;--dout:.28s">
+          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:40vh;top:22%;left:-8%;--din:.15s;--dout:.14s">
         </div>
-        <div class="cloud-layer cl-front">
-          <i class="puff f1"></i><i class="puff f2"></i><i class="puff f3"></i><i class="puff f4"></i><i class="puff f5"></i>
+        <div class="clouds front">
+          <img class="cloud" src="assets/clouds/cloud7.svg" alt="" draggable="false" style="width:106vh;top:8%;left:8%;--din:.02s;--dout:.02s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:80vh;top:-12%;left:30%;--din:.06s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:76vh;top:52%;left:16%;--din:.10s;--dout:.06s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:66vh;top:32%;left:30%;--din:.04s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:30%;--din:.12s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:32vh;top:46%;left:47%;--din:.08s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:30vh;top:23%;left:1%;--din:.14s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:48vh;top:30%;left:-2%;--din:.03s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:56vh;top:70%;left:42%;--din:.16s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:60vh;top:-5%;left:14%;--din:.05s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:16%;left:1%;--din:.07s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:50vh;top:41%;left:33%;--din:.09s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:54vh;top:62%;left:6%;--din:.11s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:78vh;bottom:-14%;left:6%;--din:.03s;--dout:.06s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:-10%;--din:.09s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:64vh;bottom:-10%;left:22%;--din:.13s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:58vh;top:-10%;left:-10%;--din:.06s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:44vh;top:40%;left:-11%;--din:.10s;--dout:.24s">
         </div>
       </div>
       <div class="cloud-bank cb-right">
-        <div class="cloud-layer cl-mist"></div>
-        <div class="cloud-layer cl-back">
-          <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+        <div class="clouds back">
+          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:64vh;top:-8%;left:2%;--din:.07s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:58vh;top:16%;left:-8%;--din:.12s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:70vh;top:37%;left:-6%;--din:.04s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:52vh;top:58%;left:-8%;--din:.10s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud3.svg" alt="" draggable="false" style="width:42vh;top:78%;left:0%;--din:.14s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:50vh;top:28%;left:34%;--din:.06s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:26vh;top:7%;left:36%;--din:.16s;--dout:.34s">
+          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:44vh;top:45%;left:14%;--din:.08s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:2%;left:-12%;--din:.11s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:54vh;top:50%;left:-12%;--din:.05s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:50vh;top:72%;left:-12%;--din:.13s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:40vh;top:22%;left:-8%;--din:.09s;--dout:.30s">
         </div>
-        <div class="cloud-layer cl-front">
-          <i class="puff f1"></i><i class="puff f2"></i><i class="puff f3"></i><i class="puff f4"></i><i class="puff f5"></i>
+        <div class="clouds front">
+          <img class="cloud" src="assets/clouds/cloud7.svg" alt="" draggable="false" style="width:106vh;top:8%;left:8%;--din:.04s;--dout:.08s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:80vh;top:-12%;left:30%;--din:.08s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:76vh;top:52%;left:16%;--din:.12s;--dout:.04s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:66vh;top:32%;left:30%;--din:.02s;--dout:.28s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:30%;--din:.10s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:32vh;top:46%;left:47%;--din:.06s;--dout:.32s">
+          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:30vh;top:23%;left:1%;--din:.16s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:48vh;top:30%;left:-2%;--din:.05s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:56vh;top:70%;left:42%;--din:.14s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:60vh;top:-5%;left:14%;--din:.07s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:16%;left:1%;--din:.09s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:50vh;top:41%;left:33%;--din:.05s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:54vh;top:62%;left:6%;--din:.13s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:78vh;bottom:-14%;left:6%;--din:.05s;--dout:.08s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:-10%;--din:.11s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:64vh;bottom:-10%;left:22%;--din:.07s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:58vh;top:-10%;left:-10%;--din:.04s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:44vh;top:40%;left:-11%;--din:.12s;--dout:.26s">
         </div>
       </div>
       <span class="fc-label">Next Field</span>
@@ -689,7 +693,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
     </div>
   </div>
 
-  <button id="sndBtn" title="Sound on/off"><img src="assets/speaker.svg" alt="Sound on/off" draggable="false" /></button>
   <div id="tapCatcher"></div>
 
   <!-- Start gate (also unlocks audio on first tap) -->
@@ -841,6 +844,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 </defs>
 </svg></span></div>
 
+<!-- canvas-confetti (MIT) — local copy so it works offline on file:// -->
+<script src="confetti.browser.min.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -1090,23 +1095,22 @@ class ParticleSystem {
       this.layer.appendChild(p);
     }
   }
+  /** Fireworks burst (canvas-confetti): repeated 360° bursts from the lower-left and lower-right
+      for 5s, the volume tapering as time runs out. Renders on its own full-screen canvas above
+      everything, so it's always visible. Safe no-op if the library failed to load. */
   confetti(){
-    const w = stage.clientWidth;
-    for (let i=0;i<60;i++){
-      const p = document.createElement('div');
-      p.className='particle';
-      const size = rand(7,13);
-      p.style.left=rand(0,w)+'px'; p.style.top='-20px';
-      p.style.width=p.style.height=size+'px';
-      p.style.borderRadius= Math.random()<.5?'50%':'2px';
-      const hues=['#ff5a5a','#ffd23f','#4fc3f7','#8ed94f','#c77dff'];
-      p.style.background=hues[i%hues.length];
-      p.style.setProperty('--tx',rand(-60,60).toFixed(0)+'px');
-      p.style.setProperty('--ty',(stage.clientHeight+60).toFixed(0)+'px');
-      p.style.setProperty('--dur',rand(1.6,2.8).toFixed(2)+'s');
-      p.addEventListener('animationend',()=>p.remove(),{once:true});
-      effectLayer.appendChild(p);
-    }
+    if (typeof window.confetti !== 'function') return;
+    const duration = 5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+    const randomInRange = (min, max) => Math.random() * (max - min) + min;
+    const interval = window.setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) return clearInterval(interval);
+      const particleCount = 50 * (timeLeft / duration);
+      window.confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+      window.confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+    }, 250);
   }
 }
 
@@ -1327,6 +1331,7 @@ class EnergyPod {
     this.art = art;
     this.el = document.createElement('div');
     this.el.className = 'pod appear' + (hint ? ' hint' : '');
+    this.el.style.setProperty('--bflip', side === 'left' ? -1 : 1);   // left pod: mirror bunny to face Byte
     this.el.style.left = leftPct + '%';
     this.el.style.top  = topPct + '%';
     // each field's pod art has its own aspect ratio — size the box to it so the
@@ -1439,20 +1444,11 @@ class EnergyPod {
 
   shake(){ this.el.classList.add('shake'); setTimeout(()=>this.el.classList.remove('shake'),520); }
 
-  /** wrong pod: a bunny rises out of the open pod, laughing */
+  /** wrong pod: a bunny rises out of the open pod, laughing (sound only — no speech bubble) */
   async bunnyGag(){
     audio.playFile('bunny');
     this.el.classList.add('bunny-out');
-    const c = centerOf(this.el);
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble'; bubble.textContent = 'Hehehe! No energy here!';
-    bubble.style.left = c.x + 'px';
-    bubble.style.top  = (c.y - this.el.clientHeight*1.05) + 'px';
-    effectLayer.appendChild(bubble);
-    await sleep(500); bubble.classList.add('show');
-    await sleep(1500);
-    bubble.classList.remove('show');
-    await sleep(350); bubble.remove();
+    await sleep(2350);                 // let the bunny rise and hold a beat before the caller resets
   }
 
   /** put the lid back & hide the bunny */
@@ -1478,8 +1474,8 @@ EnergyPod._n = 0;
 const DLG = {
   pod1:  { src:'assets/DialoageBox1.svg',          w:347, h:158, tailX:248/347, tailY:142/158 },
   pod2:  { src:'assets/DialoageBox2.svg',          w:425, h:158, tailX:148/425, tailY:141.5/158 },
-  close: { src:'assets/ThisPodIsCloseToByte.svg',  w:566, h:158, tailX:470/566, tailY:141.5/158, scale:0.78 },
-  away:  { src:'assets/ThisPodIsAwayFromByte.svg', w:644, h:158, tailX:368/644, tailY:141.5/158, scale:0.78 },
+  close: { src:'assets/ThisPodIsCloseToByte.svg',  w:198, h:158, tailX:106.166/198, tailY:141.5/158, scale:0.92 },
+  away:  { src:'assets/ThisPodIsAwayFromByte.svg', w:163, h:158, tailX:106.166/163, tailY:141.5/158, scale:0.92 },
 };
 const DLG_BY_STEP = { left:'pod1', right:'pod2', close:'close', away:'away' };
 
@@ -1616,10 +1612,11 @@ class UIManager {
   async showWelcome(){
     this._spawnWelcomeSpecks();  // drifting cyan/yellow energy specks
     this.welcome.classList.add('show');
-    await sleep(700);            // let the title bounce in before accepting a tap
-    await this.waitForTap();     // welcomeScene is pointer-events:none → tapCatcher gets the tap
+    await sleep(2200);           // auto-hold the title, then the caller cloud-wipes it away
+  }
+  /** Tear down the welcome title (called once the cloud cover hides it). */
+  clearWelcome(){
     this.welcome.classList.remove('show');
-    await sleep(450);
     this.welcome.querySelectorAll('.welcome-particle').forEach(p => p.remove());
   }
   _spawnWelcomeSpecks(){
@@ -1671,15 +1668,15 @@ class UIManager {
     const fc = this.fieldCurtain;
     this.fcLabel.textContent = label || '';
     fc.classList.remove('part','closed');
-    fc.classList.add('show');           // clouds roll in from both sides
-    await sleep(950);                   // …until they meet → full cloud cover
+    fc.classList.add('show');           // clouds drift in from both sides (each with its own delay)
+    await sleep(720);                   // …until they meet → full cloud cover (covers entry + stagger)
     if (onCover) onCover();             // swap the farm safely while hidden
     if (label) fc.classList.add('closed');   // field label pops in over the clouds
-    await sleep(1500);                  // hold the cloudy screen for a few seconds
+    await sleep(900);                   // hold the cloudy screen for a beat
     fc.classList.remove('closed');
-    if (label) await sleep(240);        // let the label fade before the clouds part
-    fc.classList.add('part');           // clouds drift back out to the sides
-    await sleep(950);
+    if (label) await sleep(180);        // let the label fade before the clouds part
+    fc.classList.add('part');           // clouds drift back out — staggered, not all at once
+    await sleep(980);                   // wait out the staggered exit before tearing down
     fc.classList.remove('show','part');
   }
   /** glow tile follows Byte's current path cell (board %) */
@@ -1770,12 +1767,6 @@ class GameManager {
     for (let n = 2; n <= 9; n++){ const im = new Image(); im.src = `assets/${LEVEL_CONFIG[n].background}`; }
 
     $('#replayBtn').addEventListener('click', () => this.restart());
-    const sndBtn = $('#sndBtn');
-    sndBtn.addEventListener('click', () => {
-      const on = audio.toggle();
-      sndBtn.classList.toggle('muted', !on);   // show the slash-through when muted
-      if (on) audio.play('coin');
-    });
     stage.addEventListener('pointerdown', () => audio.resume(), { passive:true });
   }
 
@@ -1821,7 +1812,12 @@ class GameManager {
 
   async runIntro(){
     await this.ui.showWelcome();                 // big playful "Welcome to the Energy Farm!" title
-    this.spawnPods(this.levels[0], false);      // pods appear for the intro
+    // auto cloud-wipe from the welcome title into the pod-intro screen — under the cloud cover we
+    // clear the welcome and spawn the intro pods, so they're revealed as the clouds part.
+    await this.ui.fieldTransition('', () => {
+      this.ui.clearWelcome();
+      this.spawnPods(this.levels[0], false);
+    });
     const left  = this.pods.find(p => p.side === 'left');
     const right = this.pods.find(p => p.side === 'right');
     // Scene 2 → glow + "This is a Pod." on the LEFT pod only
@@ -2061,8 +2057,7 @@ class GameManager {
   async win(){
     this.ui.hideInstruction();
     playSound('win');
-    this.particles.confetti();
-    setTimeout(() => this.particles.confetti(), 700);
+    this.particles.confetti();   // 5s two-sided fireworks (canvas-confetti)
   }
 
   restart(){
@@ -2139,5 +2134,6 @@ window.addEventListener('load', () => {
 });
 </script>
 <!-- screen debug overlay (dormant until you press D, or open with ?debug=1) -->
+
 </body>
 </html>
