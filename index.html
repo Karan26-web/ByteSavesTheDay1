@@ -370,7 +370,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* ── Instruction panel: the InstructionPanel.svg banner (cream, soft green border) with the
    instruction text centred on it. The panel pops in, then the text fades up — with the near/far
    keyword in red so it stands out. ── */
-#instrPanel{position:absolute;left:50%;top:clamp(44px,10vh,86px);transform:translateX(-50%);
+#instrPanel{position:absolute;left:50%;top:clamp(8px,3vh,34px);transform:translateX(-50%);
   width:clamp(300px,58vw,660px);max-width:92vw;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s;}
 #instrPanel.show{opacity:1;visibility:visible;}
@@ -521,6 +521,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   font-size:clamp(18px,5vw,24px);z-index:72;pointer-events:auto;
   display:grid;place-items:center;transition:transform .12s ease;}
 #sndBtn:active{transform:scale(.9);}
+#sndBtn img{width:62%;height:62%;object-fit:contain;pointer-events:none;}
+/* muted state: dim the speaker + draw a red diagonal slash through it */
+#sndBtn.muted img{opacity:.5;}
+#sndBtn.muted::after{content:"";position:absolute;top:50%;left:50%;width:70%;height:3px;
+  border-radius:2px;background:#e23b3b;transform:translate(-50%,-50%) rotate(-45deg);
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.9);}
 
 /* ---------- Start gate ---------- */
 #startScreen{position:absolute;inset:0;z-index:95;cursor:pointer;
@@ -683,7 +689,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
     </div>
   </div>
 
-  <button id="sndBtn" title="Sound on/off">🔊</button>
+  <button id="sndBtn" title="Sound on/off"><img src="assets/speaker.svg" alt="Sound on/off" draggable="false" /></button>
   <div id="tapCatcher"></div>
 
   <!-- Start gate (also unlocks audio on first tap) -->
@@ -1052,6 +1058,7 @@ class AudioManager {
   }
 }
 const audio = new AudioManager();
+window.audio = audio;                    // exposed for the debug level-jump widget
 /* public placeholder API (drives the AudioManager):
    playSound("slide"|"step"|"footstep"|"land"|"arm"|"charge"|"pop"|"cap"|"wrong"|"coin"|"bunny"|"win") */
 function playSound(name){ audio.play(name); }
@@ -1568,9 +1575,16 @@ class UIManager {
     const boxWp = cfg.w / 1920 * 100 * (cfg.scale || 1);   // per-bubble size scale (close/away are smaller)
     const boxHp = boxWp * (cfg.h / cfg.w) * ar;          // convert width-% → height-% (16:9 board)
     // dialogueX = tail tip on the pod centre; dialogueY = tail tip just onto the visible pod cap
-    const leftP   = podCx - cfg.tailX * boxWp;
+    let leftP     = podCx - cfg.tailX * boxWp;
     const capTopP = podTop + podH * 0.075;
     const topP    = capTopP + podH * 0.03 - cfg.tailY * boxHp;
+    // Keep the WHOLE bubble inside the visible viewport: for a corner/edge pod the body would
+    // otherwise spill past the screen and clip. Clamp left/right to the on-screen board-% range
+    // (the board can be wider than the viewport, so derive the visible span from its live rect).
+    const EDGE = 1.5;                                            // board-% breathing room from the edge
+    const visL = (0 - bo.left) / boardW * 100 + EDGE;
+    const visR = (window.innerWidth - bo.left) / boardW * 100 - EDGE;
+    if (visR - visL >= boxWp) leftP = clamp(leftP, visL, visR - boxWp);   // only if it fits
     d.img.style.width = boxWp + '%';
     d.img.style.left  = leftP + '%';
     d.img.style.top   = topP + '%';
@@ -1713,17 +1727,17 @@ const POD_ROW_Y = PLAY_TILE - POD_LIFT;       // pod row (slightly above Byte); 
    pixel-scan can't run from file:// — tainted-canvas — so the anchors are baked in here).
    Distances are intentionally asymmetric — that's what the near/far instruction tests. */
 const LEVEL_CONFIG = {
-  2: { background: 'Background1.svg', pathwayX: 30.10, leftDistance: 1, rightDistance: 6 },
-  3: { background: 'Background2.svg', pathwayX: 69.48, leftDistance: 2, rightDistance: 5 },
+  2: { background: 'Background1.svg', pathwayX: 30.10, leftDistance: 2, rightDistance: 6 },
+  3: { background: 'Background2.svg', pathwayX: 69.48, leftDistance: 5, rightDistance: 2 },
   4: { background: 'Background3.svg', pathwayX: 43.23, leftDistance: 3, rightDistance: 4 },
   5: { background: 'Background4.svg', pathwayX: 50.10, leftDistance: 5, rightDistance: 3 },
-  6: { background: 'Background5.svg', pathwayX: 36.56, leftDistance: 4, rightDistance: 1 },
+  6: { background: 'Background5.svg', pathwayX: 36.56, leftDistance: 4, rightDistance: 2 },
   7: { background: 'Background6.svg', pathwayX: 63.02, leftDistance: 5, rightDistance: 2 },
-  8: { background: 'Background7.svg', pathwayX: 17.19, leftDistance: 1, rightDistance: 5 },
+  8: { background: 'Background7.svg', pathwayX: 17.19, leftDistance: 2, rightDistance: 5 },
   9: { background: 'Background8.svg', pathwayX: 23.65, leftDistance: 2, rightDistance: 4 },
 };
 
-const POD_EDGE = 7;   // keep pods at least this % in from the board edges (stay tappable)
+const POD_EDGE = 3;   // keep pods at least this % in from the board edges (stay tappable)
 
 class GameManager {
   constructor(){
@@ -2047,10 +2061,8 @@ class GameManager {
   async win(){
     this.ui.hideInstruction();
     playSound('win');
-    await this.ui.bigMessage('ALL FIELDS SAVED! 🎉', 1400);
     this.particles.confetti();
     setTimeout(() => this.particles.confetti(), 700);
-    $('#win').classList.add('show');
   }
 
   restart(){
@@ -2059,6 +2071,34 @@ class GameManager {
     this.level = 0; this.busy = false; this.canTap = false;
     this.ui.hideHint();
     this.start();
+  }
+
+  /** DEBUG: jump straight onto a level (0 = tutorial level, 1-8 = puzzle levels). Tears down any
+      in-flight state/overlays, drops Byte on that level's pathway, and runs beginLevel(). */
+  async jumpToLevel(idx){
+    idx = clamp(idx|0, 0, this.levels.length - 1);
+    // tear down whatever's on screen
+    $('#win').classList.remove('show');
+    this.ui.welcome.classList.remove('show');
+    this.ui.hideHint(); this.ui.hidePathTiles(); this.ui.hideInstruction();
+    this.ui.fieldCurtain.classList.remove('show','part','closed');
+    this.ui.tapCatcher.classList.remove('on');               // release any pending waitForTap()
+    if (this.ui._dlg){ this.ui._dlg.img.remove(); this.ui._dlg = null; }
+    this.pods.forEach(p => p.destroy()); this.pods = [];
+    if (this.byte.stretch){ this.byte.stretch.remove(); this.byte.stretch = null; }
+    this.byte.stopCharge(); this.byte.faceForward();
+    audio.stopMove();
+    this.busy = false; this.canTap = false;
+    this.tutorialStep = null;
+    // place Byte on the target level and start it
+    this.level = idx;
+    const cfg = this.levels[idx];
+    this.setField(idx);
+    this._resolvePathX();
+    this._placeByteColumn(this._pathX);
+    this.byte.setTopPercent(cfg.byteTop, true);
+    this.ui.moveTile(cfg.byteTop);
+    await this.beginLevel();
   }
 }
 
@@ -2069,6 +2109,7 @@ window.addEventListener('load', () => {
   audio.init();
   preloadTurnSvgs();                    // process the inlined turn SVGs so the arm can telescope
   const game = new GameManager();
+  window.game = game;                    // exposed for the debug level-jump widget
   const startScreen = $('#startScreen');
 
   // ---- Portrait gate -------------------------------------------------------------------
@@ -2083,18 +2124,21 @@ window.addEventListener('load', () => {
   window.addEventListener('orientationchange', applyOrientation);
   applyOrientation();                   // set the correct state on first load
 
-  // First tap unlocks the AudioContext (browser autoplay policy) AND kicks
+  // The PLAY button (only) unlocks the AudioContext (browser autoplay policy) AND kicks
   // off Byte's entrance — so every movement sound is audible from the start.
+  const playBtn = $('#startScreen .play-btn');
   const begin = () => {
-    startScreen.removeEventListener('click', begin);
+    playBtn.removeEventListener('click', begin);
     audio.resume();
     audio.startTheme();                 // looping background theme (starts once, never overlaps)
     audio.play('coin');                 // tiny confirmation blip
     startScreen.classList.add('hide');
     game.start();
   };
-  startScreen.addEventListener('click', begin);
+  playBtn.addEventListener('click', begin);
 });
 </script>
+<!-- screen debug overlay (dormant until you press D, or open with ?debug=1) -->
+<script src="debug.js?v=2"></script>
 </body>
 </html>
