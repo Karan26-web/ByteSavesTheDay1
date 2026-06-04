@@ -90,7 +90,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* Byte ≈ Figma 170×166: height 16% of the 1080 design (≈173px tall → ≈170px / 8.85% wide,
    matching width:clamp(110px,8.8vw,170px)). width:auto keeps the sprite's aspect. */
 #byte{position:absolute;left:50.13%;top:91%;height:16%;width:auto;
-  transform:translate(-50%,-50%);
+  /* lift the sprite ~8% of its own height so it sits centred on the tile rather than at its
+     bottom edge. This is a sprite-only nudge (its `top`/byteTop is unchanged), so the glow
+     square (#tile) and the path-highlight tiles stay put. */
+  transform:translate(-50%,-58%);
   transition:top 1.5s cubic-bezier(.38,.02,.28,1), left 1.5s cubic-bezier(.34,1.4,.5,1);
   z-index:25;will-change:top;}
 
@@ -141,9 +144,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
      .byte-breath → foot-contact squash / lift stretch          (byteStep)
      .byte-shadow → shrinks on lift, grows on land              (walkShadow)
    Overriding these animations also kills the normal float/breath. */
-#byte.walking .byte-float{animation:byteWalk .45s infinite ease-in-out;transform-origin:50% 90%;}
-#byte.walking .byte-breath{animation:byteStep .45s infinite ease-in-out;}
-#byte.walking .byte-shadow{animation:walkShadow .45s infinite ease-in-out;}
+#byte.walking .byte-float{animation:byteWalk .58s infinite ease-in-out;transform-origin:50% 90%;}
+#byte.walking .byte-breath{animation:byteStep .58s infinite ease-in-out;}
+#byte.walking .byte-shadow{animation:walkShadow .58s infinite ease-in-out;}
 /* landing impact as Byte settles onto its destination tile */
 #byte.landing .byte-breath{animation:byteLand .18s ease-out;}
 
@@ -156,14 +159,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes byteFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3.5%)}}
 @keyframes shadowPulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.85}50%{transform:translateX(-50%) scale(.86);opacity:.6}}
 @keyframes byteBreath{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.975)}}
-/* Procedural walk: vertical bob, alternating body lean, and weight shift.
-   Two foot-lifts per cycle (25% + 75%); contacts at 0/50/100%. */
+/* Procedural walk: vertical bob, alternating body lean, and weight shift. Amplitudes are in %
+   (of Byte's own box) rather than px, so the gait stays visible/proportional on big & Retina
+   screens instead of shrinking to a few pixels. Two foot-lifts per cycle (25% + 75%). */
 @keyframes byteWalk{
-  0%  {transform:translateX(-3px) translateY(0)    rotate(-2deg)}
-  25% {transform:translateX(0)    translateY(-5px) rotate(2deg)}
-  50% {transform:translateX(3px)  translateY(0)    rotate(2deg)}
-  75% {transform:translateX(0)    translateY(-5px) rotate(-2deg)}
-  100%{transform:translateX(-3px) translateY(0)    rotate(-2deg)}
+  0%  {transform:translateX(-4%) translateY(0)   rotate(-2.5deg)}
+  25% {transform:translateX(0)   translateY(-8%) rotate(2.5deg)}
+  50% {transform:translateX(4%)  translateY(0)   rotate(2.5deg)}
+  75% {transform:translateX(0)   translateY(-8%) rotate(-2.5deg)}
+  100%{transform:translateX(-4%) translateY(0)   rotate(-2.5deg)}
 }
 /* Robot step squash: flatten on foot contact, stretch tall on lift (feet pivot) */
 @keyframes byteStep{
@@ -363,53 +367,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes blink{50%{opacity:0}}
 @keyframes contPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 
-/* ── Energy instruction panel (staged: bulb pops → glass panel expands → text fades) ── */
+/* ── Instruction panel: the InstructionPanel.svg banner (cream, soft green border) with the
+   instruction text centred on it. The panel pops in, then the text fades up — with the near/far
+   keyword in red so it stands out. ── */
 #instrPanel{position:absolute;left:50%;top:clamp(44px,10vh,86px);transform:translateX(-50%);
-  width:clamp(300px,60vw,720px);max-width:90vw;pointer-events:none;
+  width:clamp(300px,58vw,660px);max-width:92vw;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s;}
 #instrPanel.show{opacity:1;visibility:visible;}
-/* energy bulb badge (uses Energy.svg) — pops in first with a yellow glow + pulse */
-#instrPanel .ip-bulb{position:absolute;left:clamp(-12px,-1.2vw,-8px);top:50%;z-index:3;
-  width:clamp(48px,10vw,66px);height:clamp(48px,10vw,66px);border-radius:50%;
-  display:grid;place-items:center;
-  background:radial-gradient(circle at 50% 38%, rgba(12,58,60,.96), rgba(4,28,30,.96));
-  border:2px solid #25dff5;
-  box-shadow:0 0 18px 4px rgba(255,210,70,.7), inset 0 0 12px rgba(255,225,120,.3), 0 4px 10px rgba(0,0,0,.35);
-  transform:translateY(-50%) scale(0) rotate(-10deg);opacity:0;}
-#instrPanel .ip-bulb svg{width:58%;height:58%;display:block;filter:drop-shadow(0 0 5px rgba(255,225,120,.95));}
-#instrPanel.bulb-in .ip-bulb{
-  animation:ipBulbPop .4s cubic-bezier(.34,1.7,.5,1) forwards, ipBulbPulse 1.7s ease-in-out .4s infinite;}
-/* dark glass panel with cyan glow border; revealed left→right via clip-path */
-#instrPanel .ip-body{position:relative;box-sizing:border-box;
-  padding:.72em 1.1em .72em clamp(54px,11vw,76px);
-  background:rgba(5,35,35,.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-  border:2px solid #25dff5;border-radius:25px;box-shadow:0 0 20px rgba(0,220,255,.5);
-  clip-path:inset(0 100% 0 0 round 25px);opacity:0;
-  transition:clip-path .5s ease, opacity .3s ease;}
-#instrPanel.panel-open .ip-body{clip-path:inset(0 0 0 0 round 25px);opacity:1;}
-/* instruction text fades up after the panel opens */
-#instrPanel .ip-text{color:#fff;font-weight:700;line-height:1.38;text-align:center;
-  font-size:clamp(13px,3.2vw,17px);text-shadow:0 1px 3px rgba(0,0,0,.5);
-  opacity:0;transform:translateY(10px);transition:opacity .45s ease, transform .45s ease;}
-#instrPanel.text-in .ip-text{opacity:1;transform:translateY(0);}
-/* futuristic HUD corner brackets */
-#instrPanel .ip-c{position:absolute;width:13px;height:13px;border:2px solid #25dff5;opacity:.75;pointer-events:none;}
-#instrPanel .ip-tl{top:7px;left:7px;border-right:none;border-bottom:none;border-radius:7px 0 0 0;}
-#instrPanel .ip-tr{top:7px;right:7px;border-left:none;border-bottom:none;border-radius:0 7px 0 0;}
-#instrPanel .ip-bl{bottom:7px;left:7px;border-right:none;border-top:none;border-radius:0 0 0 7px;}
-#instrPanel .ip-br{bottom:7px;right:7px;border-left:none;border-top:none;border-radius:0 0 7px 0;}
-/* tiny drifting energy specks inside the panel (run only while open — lightweight) */
-#instrPanel .ip-spark{position:absolute;bottom:6px;width:4px;height:4px;border-radius:50%;
-  background:#7af0ff;box-shadow:0 0 6px 1px rgba(120,240,255,.9);opacity:0;pointer-events:none;}
-#instrPanel.panel-open .ip-spark{animation:ipSpark linear infinite;}
-#instrPanel .ip-spark.s1{left:24%;animation-duration:3.2s;}
-#instrPanel .ip-spark.s2{left:52%;animation-duration:4s;animation-delay:1s;}
-#instrPanel .ip-spark.s3{left:78%;animation-duration:3.6s;animation-delay:.5s;}
-@keyframes ipBulbPop{0%{transform:translateY(-50%) scale(0) rotate(-10deg);opacity:0}
-  100%{transform:translateY(-50%) scale(1) rotate(0);opacity:1}}
-@keyframes ipBulbPulse{0%,100%{box-shadow:0 0 14px 2px rgba(255,210,70,.55), inset 0 0 12px rgba(255,225,120,.3), 0 4px 10px rgba(0,0,0,.35)}
-  50%{box-shadow:0 0 26px 8px rgba(255,228,120,.95), inset 0 0 14px rgba(255,235,150,.45), 0 4px 10px rgba(0,0,0,.35)}}
-@keyframes ipSpark{0%{transform:translateY(0);opacity:0}20%{opacity:.85}80%{opacity:.5}100%{transform:translateY(-26px);opacity:0}}
+/* the panel art (946×154) — pops in with a gentle scale */
+#instrPanel .ip-bg{display:block;width:100%;height:auto;transform-origin:center;
+  transform:scale(.86);opacity:0;
+  transition:transform .42s cubic-bezier(.34,1.6,.5,1), opacity .3s ease;}
+#instrPanel.panel-open .ip-bg{transform:scale(1);opacity:1;}
+/* instruction text, centred over the panel — dark navy on the cream panel, keyword in red.
+   Absolute-centred (no grid/flex, which collapse the run to min-content) inside 86% of the panel
+   width so it wraps normally to 1–2 lines and stays within the banner. */
+#instrPanel .ip-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:88%;text-align:center;color:#1B334E;font-weight:800;
+  font-size:clamp(14px,3vw,23px);line-height:1.22;
+  opacity:0;transition:opacity .42s ease;}
+#instrPanel.text-in .ip-text{opacity:1;}
+#instrPanel .ip-text .kw{color:#D63C06;}   /* highlighted keyword (near / far) */
 
 #bigMsg{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);
   color:#fff;font-weight:900;text-align:center;opacity:0;pointer-events:none;z-index:75;
@@ -417,13 +395,79 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.6,.5,1);}
 #bigMsg.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
-#fieldCurtain{position:absolute;inset:0;z-index:82;pointer-events:none;opacity:0;
-  display:grid;place-items:center;color:#fff;font-weight:900;
-  font-size:clamp(24px,7vw,48px);text-shadow:0 4px 0 #1b9bd1, 0 8px 18px rgba(0,0,0,.42);
-  background:linear-gradient(180deg, rgba(61,168,82,.08), rgba(36,135,62,.9) 42%, rgba(19,76,38,.94));
-  transform:translateY(100%);transition:transform .75s cubic-bezier(.35,.02,.25,1), opacity .45s ease;}
-#fieldCurtain.show{opacity:1;transform:translateY(0);}
-#fieldCurtain.hide-up{opacity:0;transform:translateY(-100%);}
+/* ── Cloud transition (between fields): three layered fluffy cloud banks drift in from each side
+     with PARALLAX (front fast → back medium → mist slow), meet with a soft overshoot "squish" for
+     a magical whiteout, float energy sparks through the clouds, surface the label, then part with
+     the mist trailing last. Pure transform + opacity. Drives off the existing .show / .closed /
+     .part classes — the JS flow is unchanged. ── */
+#fieldCurtain{position:absolute;inset:0;z-index:82;pointer-events:none;overflow:hidden;
+  opacity:0;visibility:hidden;transition:opacity .4s ease, visibility .4s;}
+#fieldCurtain.show{opacity:1;visibility:visible;}
+/* each bank covers >half the screen so the two banks overlap into a solid cloudy centre */
+#fieldCurtain .cloud-bank{position:absolute;top:0;height:100%;width:70%;}
+#fieldCurtain .cb-left{left:0;}
+#fieldCurtain .cb-right{right:0;}
+/* the three parallax layers — each starts fully off its own side */
+#fieldCurtain .cloud-layer{position:absolute;inset:-14% 0;will-change:transform,opacity;}
+#fieldCurtain .cb-left  .cloud-layer{transform:translateX(-118%);}
+#fieldCurtain .cb-right .cloud-layer{transform:translateX(118%);}
+/* drift-in: front fast, back medium, mist slow (depth). Overshoot curves give a gentle squish
+   as the cloud fronts meet in the centre. */
+#fieldCurtain .cl-front{transition:transform .7s cubic-bezier(.32,1.4,.5,1);}
+#fieldCurtain .cl-back {transition:transform .9s cubic-bezier(.38,1.14,.5,1);}
+#fieldCurtain .cl-mist {transition:transform 1.1s ease;}
+#fieldCurtain.show .cloud-layer{transform:translateX(0);}         /* clouds meet in the middle */
+/* part: layers retreat to their own sides; mist trails LAST (longest + delayed) */
+#fieldCurtain.part .cb-left  .cloud-layer{transform:translateX(-118%);}
+#fieldCurtain.part .cb-right .cloud-layer{transform:translateX(118%);}
+#fieldCurtain.part .cl-front{transition:transform .6s ease-in;}
+#fieldCurtain.part .cl-back {transition:transform .78s ease-in .07s;}
+#fieldCurtain.part .cl-mist {transition:transform 1s ease-in .2s;}
+
+/* Layer 1 — big soft cloud body: pure-white core feathering to light blue at the centre-facing
+   edge via a RADIAL gradient (no straight rectangular edge), softened with a light blur. */
+#fieldCurtain .cl-back{filter:blur(2px);}
+#fieldCurtain .cb-left  .cl-back{background:radial-gradient(105% 135% at 0% 50%, #fff 52%, #e9f3ff 74%, rgba(219,236,255,0) 95%);}
+#fieldCurtain .cb-right .cl-back{background:radial-gradient(105% 135% at 100% 50%, #fff 52%, #e9f3ff 74%, rgba(219,236,255,0) 95%);}
+/* fluffy rounded clouds — white core, soft light-blue edge, no hard borders. blob = large body
+   shapes (back layer); puff = smaller overlapping shapes (front layer). */
+#fieldCurtain .blob,#fieldCurtain .puff{position:absolute;border-radius:50%;
+  background:radial-gradient(circle at 40% 34%, #fff 56%, #eaf4ff 73%, rgba(213,233,255,0) 82%);}
+#fieldCurtain .blob{filter:drop-shadow(0 12px 24px rgba(118,158,210,.18));}
+#fieldCurtain .puff{filter:drop-shadow(0 7px 15px rgba(118,158,210,.15));}
+/* back blobs (large) */
+#fieldCurtain .b1{width:48vh;height:48vh;top:-10vh;}
+#fieldCurtain .b2{width:60vh;height:60vh;top:16vh;}
+#fieldCurtain .b3{width:52vh;height:52vh;bottom:2vh;}
+#fieldCurtain .b4{width:42vh;height:42vh;bottom:-14vh;}
+#fieldCurtain .cb-left  .b1{right:-16vh;} #fieldCurtain .cb-right .b1{left:-16vh;}
+#fieldCurtain .cb-left  .b2{right:-20vh;} #fieldCurtain .cb-right .b2{left:-20vh;}
+#fieldCurtain .cb-left  .b3{right:-12vh;} #fieldCurtain .cb-right .b3{left:-12vh;}
+#fieldCurtain .cb-left  .b4{right:-22vh;} #fieldCurtain .cb-right .b4{left:-22vh;}
+/* front puffs (smaller, overlapping, varied) */
+#fieldCurtain .f1{width:24vh;height:24vh;top:-4vh;}
+#fieldCurtain .f2{width:34vh;height:34vh;top:14vh;}
+#fieldCurtain .f3{width:28vh;height:28vh;top:42vh;}
+#fieldCurtain .f4{width:36vh;height:36vh;bottom:2vh;}
+#fieldCurtain .f5{width:22vh;height:22vh;bottom:-8vh;}
+#fieldCurtain .cb-left  .f1{right:-8vh;}  #fieldCurtain .cb-right .f1{left:-8vh;}
+#fieldCurtain .cb-left  .f2{right:-13vh;} #fieldCurtain .cb-right .f2{left:-13vh;}
+#fieldCurtain .cb-left  .f3{right:-6vh;}  #fieldCurtain .cb-right .f3{left:-6vh;}
+#fieldCurtain .cb-left  .f4{right:-14vh;} #fieldCurtain .cb-right .f4{left:-14vh;}
+#fieldCurtain .cb-left  .f5{right:7vh;}   #fieldCurtain .cb-right .f5{left:7vh;}
+
+/* Layer 3 — semi-transparent drifting mist/fog that softens the whole whiteout */
+#fieldCurtain .cl-mist{filter:blur(11px);}
+#fieldCurtain .cb-left  .cl-mist{background:radial-gradient(120% 110% at 25% 50%, rgba(255,255,255,.72) 38%, rgba(223,239,255,.34) 70%, rgba(223,239,255,0) 100%);}
+#fieldCurtain .cb-right .cl-mist{background:radial-gradient(120% 110% at 75% 50%, rgba(255,255,255,.72) 38%, rgba(223,239,255,.34) 70%, rgba(223,239,255,0) 100%);}
+
+/* The field label — surfaces from INSIDE the clouds: scale-up + float-up + fade once closed */
+#fieldCurtain .fc-label{position:absolute;left:50%;top:50%;z-index:6;
+  transform:translate(-50%,-42%) scale(.8);color:#3f7fb5;font-weight:900;
+  font-size:clamp(26px,7vw,52px);
+  text-shadow:0 2px 0 #dcefff, 0 0 22px rgba(255,255,255,.92), 0 9px 20px rgba(90,140,190,.25);
+  opacity:0;transition:opacity .45s ease, transform .5s cubic-bezier(.34,1.5,.5,1);}
+#fieldCurtain.closed .fc-label{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
 #tapCatcher{position:absolute;inset:0;z-index:65;display:none;cursor:pointer;}
 #tapCatcher.on{display:block;pointer-events:auto;}
@@ -603,24 +647,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
       <span class="pct">15%</span>
     </div>
     <div id="instrPanel">
-      <div class="ip-bulb"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs><linearGradient id="ipBulbGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#FFF3A8"/><stop offset=".55" stop-color="#FFE14D"/><stop offset="1" stop-color="#FBC51E"/>
-        </linearGradient></defs>
-        <path d="M11 20.5C8.5 18.8 7 16.1 7 13 7 8 11 4.5 16 4.5S25 8 25 13c0 3.1-1.5 5.8-4 7.5-.8.6-1.2 1.3-1.2 2.1V23h-7.6v-.4c0-.8-.4-1.5-1.2-2.1Z"
-          fill="url(#ipBulbGrad)" stroke="#D98E12" stroke-width="1.3" stroke-linejoin="round"/>
-        <ellipse cx="12.4" cy="10" rx="1.5" ry="2.5" fill="#FFFDF0" opacity=".7" transform="rotate(-20 12.4 10)"/>
-        <path d="M13 12.6l1.7 2.3 2.6-3.2 1.7 2.3" fill="none" stroke="#D98E12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <rect x="12" y="23.2" width="8" height="2.4" rx="1" fill="#E4E6EC"/>
-        <rect x="12.8" y="25.4" width="6.4" height="2.2" rx="1" fill="#C8CBD4"/>
-        <path d="M13.7 27.5h4.6" stroke="#A6A9B3" stroke-width="1" stroke-linecap="round"/>
-      </svg></div>
-      <div class="ip-body">
-        <span class="ip-c ip-tl"></span><span class="ip-c ip-tr"></span>
-        <span class="ip-c ip-bl"></span><span class="ip-c ip-br"></span>
-        <i class="ip-spark s1"></i><i class="ip-spark s2"></i><i class="ip-spark s3"></i>
-        <div class="ip-text"></div>
-      </div>
+      <img class="ip-bg" src="assets/InstructionPanel.svg" alt="" draggable="false" />
+      <div class="ip-text"></div>
     </div>
     <div id="bigMsg"></div>
     <div id="welcomeScene">
@@ -628,7 +656,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
       <img class="welcome-title" src="assets/WelcomeText.svg" alt="Welcome to the Energy Farm!" draggable="false" />
       <div class="welcome-sub"><span class="play-tri">▶</span> tap to start</div>
     </div>
-    <div id="fieldCurtain">Next Field</div>
+    <div id="fieldCurtain">
+      <div class="cloud-bank cb-left">
+        <div class="cloud-layer cl-mist"></div>
+        <div class="cloud-layer cl-back">
+          <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+        </div>
+        <div class="cloud-layer cl-front">
+          <i class="puff f1"></i><i class="puff f2"></i><i class="puff f3"></i><i class="puff f4"></i><i class="puff f5"></i>
+        </div>
+      </div>
+      <div class="cloud-bank cb-right">
+        <div class="cloud-layer cl-mist"></div>
+        <div class="cloud-layer cl-back">
+          <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+        </div>
+        <div class="cloud-layer cl-front">
+          <i class="puff f1"></i><i class="puff f2"></i><i class="puff f3"></i><i class="puff f4"></i><i class="puff f5"></i>
+        </div>
+      </div>
+      <span class="fc-label">Next Field</span>
+    </div>
     <div id="instruction">
       <div class="txt"></div>
       <div class="cont">▼ tap to continue</div>
@@ -1160,11 +1208,11 @@ class Byte {
   }
 
   /** Step-walk along the painted path. The position advances in discrete hops
-      (~one per foot contact, every ~225ms) instead of a smooth glide, so it
+      (~one per foot contact, every ~290ms) instead of a smooth glide, so it
       reads as walking rather than sliding — the bob + squash hide the hops. */
-  async slideTo(topPercent, { duration = 1500, sound = 'slide' } = {}){
+  async slideTo(topPercent, { duration = 1800, sound = 'slide' } = {}){
     if (sound) playSound(sound);
-    const hops = Math.max(2, Math.round(duration / 225));   // sync to the .45s gait
+    const hops = Math.max(2, Math.round(duration / 290));   // sync to the .58s gait (bigger strides)
     this.el.style.transition = `top ${duration}ms steps(${hops}, jump-end)`;
     this.el.classList.add('walking');
     this.setTopPercent(topPercent);
@@ -1423,8 +1471,8 @@ EnergyPod._n = 0;
 const DLG = {
   pod1:  { src:'assets/DialoageBox1.svg',          w:347, h:158, tailX:248/347, tailY:142/158 },
   pod2:  { src:'assets/DialoageBox2.svg',          w:425, h:158, tailX:148/425, tailY:141.5/158 },
-  close: { src:'assets/ThisPodIsCloseToByte.svg',  w:566, h:158, tailX:470/566, tailY:141.5/158 },
-  away:  { src:'assets/ThisPodIsAwayFromByte.svg', w:644, h:158, tailX:368/644, tailY:141.5/158 },
+  close: { src:'assets/ThisPodIsCloseToByte.svg',  w:566, h:158, tailX:470/566, tailY:141.5/158, scale:0.78 },
+  away:  { src:'assets/ThisPodIsAwayFromByte.svg', w:644, h:158, tailX:368/644, tailY:141.5/158, scale:0.78 },
 };
 const DLG_BY_STEP = { left:'pod1', right:'pod2', close:'close', away:'away' };
 
@@ -1441,6 +1489,7 @@ class UIManager {
     this.bigMsg  = $('#bigMsg');
     this.welcome = $('#welcomeScene');
     this.fieldCurtain = $('#fieldCurtain');
+    this.fcLabel = $('.fc-label', this.fieldCurtain);
     this.battery = { fill: $('#battery .fill'), pct: $('#battery .pct') };
     this.tapCatcher = $('#tapCatcher');
     this.tile = $('#tile');
@@ -1516,7 +1565,7 @@ class UIManager {
     const podTop = (pr.top  - bo.top) / boardH * 100;
     const podH   = pr.height / boardH * 100;
     // bubble size in board %: width is cfg.w of the 1920-wide world; height keeps the art's aspect
-    const boxWp = cfg.w / 1920 * 100;
+    const boxWp = cfg.w / 1920 * 100 * (cfg.scale || 1);   // per-bubble size scale (close/away are smaller)
     const boxHp = boxWp * (cfg.h / cfg.w) * ar;          // convert width-% → height-% (16:9 board)
     // dialogueX = tail tip on the pod centre; dialogueY = tail tip just onto the visible pod cap
     const leftP   = podCx - cfg.tailX * boxWp;
@@ -1576,21 +1625,22 @@ class UIManager {
       this.welcome.appendChild(p);
     }
   }
-  /** Staged energy panel: bulb pops → glass panel expands → text fades in. Non-blocking. */
+  /** Instruction panel: the InstructionPanel.svg banner pops in, then the text fades up. The
+      near/far keyword is wrapped in a red <span class="kw"> so it's highlighted. Non-blocking. */
   showHint(text){
     clearTimeout(this._ipT1); clearTimeout(this._ipT2);
     if (!text){ this.hideHint(); return; }
     const p = this.instrPanel;
-    this.ipText.textContent = text;   // plain white text (no coloured keywords)
+    // highlight the near/far keyword (text is controlled here — no HTML to escape)
+    this.ipText.innerHTML = text.replace(/\b(near|far)\b/gi, '<span class="kw">$1</span>');
     p.classList.add('show');
     if (p.classList.contains('panel-open')){            // retry: panel already open, just replay text
       p.classList.remove('text-in'); void this.ipText.offsetWidth; p.classList.add('text-in');
       return;
     }
     requestAnimationFrame(() => {
-      p.classList.add('bulb-in');                       // 1. bulb pops in
-      this._ipT1 = setTimeout(() => p.classList.add('panel-open'), 420);  // 2. panel expands
-      this._ipT2 = setTimeout(() => p.classList.add('text-in'),   920);   // 3. text fades up
+      p.classList.add('panel-open');                    // 1. panel pops in
+      this._ipT2 = setTimeout(() => p.classList.add('text-in'), 340);   // 2. text fades up
     });
   }
   hideHint(){
@@ -1601,15 +1651,22 @@ class UIManager {
     this.bigMsg.textContent = text; this.bigMsg.classList.add('show');
     await sleep(ms); this.bigMsg.classList.remove('show'); await sleep(350);
   }
+  /** Cloud wipe: banks roll in from both sides → meet for a full whiteout (farm swaps under the
+      cover, label fades in) → hold a beat → part back out to the sides. */
   async fieldTransition(label, onCover){
-    this.fieldCurtain.textContent = label;
-    this.fieldCurtain.classList.remove('hide-up');
-    this.fieldCurtain.classList.add('show');
-    await sleep(720);
-    if (onCover) onCover();          // curtain fully covers the screen → safe to swap the farm
-    this.fieldCurtain.classList.add('hide-up');
-    await sleep(650);
-    this.fieldCurtain.classList.remove('show','hide-up');
+    const fc = this.fieldCurtain;
+    this.fcLabel.textContent = label || '';
+    fc.classList.remove('part','closed');
+    fc.classList.add('show');           // clouds roll in from both sides
+    await sleep(950);                   // …until they meet → full cloud cover
+    if (onCover) onCover();             // swap the farm safely while hidden
+    if (label) fc.classList.add('closed');   // field label pops in over the clouds
+    await sleep(1500);                  // hold the cloudy screen for a few seconds
+    fc.classList.remove('closed');
+    if (label) await sleep(240);        // let the label fade before the clouds part
+    fc.classList.add('part');           // clouds drift back out to the sides
+    await sleep(950);
+    fc.classList.remove('show','part');
   }
   /** glow tile follows Byte's current path cell (board %) */
   moveTile(topPercent){ this.tile.style.top = topPercent + '%'; this.tile.classList.add('show'); }
@@ -1716,7 +1773,7 @@ class GameManager {
     this._pathX = PATH_X; this._placeByteColumn(PATH_X);   // tutorial: centre pathway
     this.byte.setTopPercent(ENTER_FROM, true);
     await sleep(200);
-    await this.byte.slideTo(this.levels[0].byteTop, { duration: 3400 });
+    await this.byte.slideTo(this.levels[0].byteTop, { duration: 4000 });
     this.ui.moveTile(this.levels[0].byteTop);
     await sleep(150);
 
@@ -1764,25 +1821,31 @@ class GameManager {
     await this.ui.showDialogue(right.el, 'right');
     right.el.classList.remove('glow');
 
-    // Scene 4 → CLOSE: 2 glow tiles between Byte and the NEAR (left) pod, then the bubble.
-    // Camera stays fixed; tiles glow in (500ms) before the new bubble pops in (300ms).
-    this.tutorialStep = 'pod-close';
-    await sleep(300);                            // fade-out beat after the prior bubble
-    this.ui.showPathTiles(this._pathX != null ? this._pathX : PATH_X, 'left', 2);
-    await sleep(500);                            // tiles glow in
-    await this.ui.showDialogue(left.el, 'close');
-    this.ui.hidePathTiles();
+    // Scene 4 → "Energy cells are stored in these pods." in the instruction panel, with BOTH
+    // pods pulsing to draw the eye to them.
+    this.tutorialStep = 'energy-stored';
+    await sleep(300);                            // beat after the prior bubble fades
+    left.el.classList.add('glow'); right.el.classList.add('glow');   // both pods pulse
+    this.ui.showHint('Energy cells are stored in these pods.');
+    await sleep(650);                            // let the panel + text settle before a tap counts
+    await this.ui.waitForTap();
 
-    // Scene 5 → AWAY: 4 glow tiles between Byte and the FAR (right) pod, then the bubble.
-    this.tutorialStep = 'pod-away';
-    await sleep(300);
-    this.ui.showPathTiles(this._pathX != null ? this._pathX : PATH_X, 'right', 4);
-    await sleep(500);
-    await this.ui.showDialogue(right.el, 'away');
-    this.ui.hidePathTiles();
-
+    // Scene 5 → "Help Byte collect the cells and power up!" (mission line, pods stop pulsing).
+    this.tutorialStep = 'help-collect';
+    left.el.classList.remove('glow'); right.el.classList.remove('glow');
+    this.ui.showHint('Help Byte collect the cells and power up!');
+    await sleep(650);
+    await this.ui.waitForTap();
+    this.ui.hideHint();
     this.tutorialStep = null;
-    await sleep(300);
+
+    // Scene 6 → screen transition into the game (curtain wipe; the intro pods are cleared under
+    // it so beginLevel spawns the level fresh as the curtain lifts).
+    await this.ui.fieldTransition('', () => {
+      this.ui.hideHint();
+      this.pods.forEach(p => p.destroy()); this.pods = [];
+    });
+    await sleep(150);
   }
 
   _x(side){ return side === 'left' ? LEFT_X : RIGHT_X; }
@@ -1820,15 +1883,18 @@ class GameManager {
     });
   }
 
-  /** Instruction / hint text for the current level (Near/Far directive for puzzles). */
-  _levelHintText(){
-    const cfg = this.levels[this.level];
-    if (cfg && cfg.puzzle){
-      return this._instructionType === 'near'
-        ? 'The pod near Byte has a cell. Tap on the pod near Byte.'
-        : 'The pod far from Byte has a cell. Tap on the pod far from Byte.';
-    }
-    return cfg ? (cfg.hintText || '') : '';
+  /** The two beats of a level's instruction (near/far). Shown in sequence: the "has a cell"
+      line while Byte scans, then the "Tap on…" line once the pods are tappable. The instruction
+      panel highlights the near/far keyword in red. */
+  _levelCellText(){
+    return this._instructionType === 'near'
+      ? 'The pod near Byte has a cell.'
+      : 'The pod far from Byte has a cell.';
+  }
+  _levelTapText(){
+    return this._instructionType === 'near'
+      ? 'Tap on the pod near Byte.'
+      : 'Tap on the pod far from Byte.';
   }
 
   async beginLevel(){
@@ -1840,10 +1906,37 @@ class GameManager {
     if (cfg.puzzle) this._instructionType = Math.random() < 0.5 ? 'near' : 'far';
     this.spawnPods(cfg, true);               // pods placed left/right of the pathway
     this.ui.moveTile(cfg.byteTop);
-    this.ui.showHint(this._levelHintText());
-    await this.byte.scan();
+    this.ui.showHint(this._levelCellText());  // 1) "The pod near/far Byte has a cell."
+    await this.byte.scan();                   // Byte looks left & right while that line shows
+    this.ui.showHint(this._levelTapText());   // 2) "Tap on the pod near/far Byte."
     this.pods.forEach(p => p.enableTap(pod => this.handlePodTap(pod)));
     this.canTap = true;
+  }
+
+  /** After each attempt (right OR wrong), reinforce the near/far lesson on BOTH pods, one by one:
+      first the NEARER pod ("This pod is close to Byte"), then the FARTHER pod ("This pod is away
+      from Byte"). Each glows the path tiles between Byte and that pod and waits for a tap. */
+  async showDistanceTeaching(){
+    if (this.pods.length < 2) return;
+    const bo = board.getBoundingClientRect();
+    const distOf = pod => {
+      const r = pod.el.getBoundingClientRect();
+      return Math.abs((r.left - bo.left + r.width / 2) / bo.width * 100 - this._pathX);
+    };
+    const ordered = [...this.pods].sort((a, b) => distOf(a) - distOf(b));   // [near, far]
+    await this._teachPod(ordered[0], 'close');                // nearer pod
+    await this._teachPod(ordered[ordered.length - 1], 'away'); // farther pod
+  }
+  /** One teaching beat: glow the tiles between Byte and `pod`, then point the close/away bubble. */
+  async _teachPod(pod, step){
+    const bo = board.getBoundingClientRect();
+    const r  = pod.el.getBoundingClientRect();
+    const dist  = Math.abs((r.left - bo.left + r.width / 2) / bo.width * 100 - this._pathX);
+    const tiles = Math.max(0, Math.round(dist / COL_STEP) - 1);   // grass cells BETWEEN Byte & pod
+    if (tiles > 0) this.ui.showPathTiles(this._pathX, pod.side, tiles);
+    await sleep(tiles > 0 ? 500 : 120);                           // tiles glow in
+    await this.ui.showDialogue(pod.el, step);                     // close/away bubble + wait for tap
+    this.ui.hidePathTiles();
   }
 
   async handlePodTap(pod){
@@ -1902,6 +1995,8 @@ class GameManager {
     await sleep(700);
     this.byte.stopCharge(); this.byte.faceForward();
 
+    await this.showDistanceTeaching();        // reinforce the near/far distance for this pod
+
     this.level++;
     if (this.level >= this.levels.length) await this.win();
     else await this.advanceLevel();
@@ -1918,7 +2013,8 @@ class GameManager {
     this.byte.faceForward();
     pod.reset();
     await sleep(260);
-    this.ui.showHint(this._levelHintText());   // re-show the same instruction for the retry
+    await this.showDistanceTeaching();         // show where the cell is + the distance
+    this.ui.showHint(this._levelTapText());     // re-show the "Tap on…" instruction for the retry
     this.pods.forEach(p => p.enableTap(pp => this.handlePodTap(pp)));
     this.canTap = true; this.busy = false;
   }
@@ -1931,18 +2027,18 @@ class GameManager {
     this.ui.hideHint();
     this.ui.hideTile();
     this.byte.faceForward();
-    await this.byte.slideTo(EXIT_TO, { duration: 1900 });
+    await this.byte.slideTo(EXIT_TO, { duration: 2250 });
     this.pods.forEach(p => p.destroy()); this.pods = [];
 
     // swap the farm background UNDER the curtain so the change is a smooth fade
-    await this.ui.fieldTransition(`Field ${this.level + 1}`, () => this.setField(this.level));
+    await this.ui.fieldTransition('', () => this.setField(this.level));
     const cfg = this.levels[this.level];
     // resolve the NEW farm's pathway and stand Byte on it BEFORE walking up from the bottom
     this._resolvePathX();
     this._placeByteColumn(this._pathX);
     this.byte.setTopPercent(ENTER_FROM, true);
     await sleep(120);
-    await this.byte.slideTo(cfg.byteTop, { duration: 2200 });   // walk up the pathway
+    await this.byte.slideTo(cfg.byteTop, { duration: 2600 });   // walk up the pathway
     this.ui.moveTile(cfg.byteTop);
     await sleep(150);
     await this.beginLevel();
