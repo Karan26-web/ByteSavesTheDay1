@@ -1773,7 +1773,7 @@ class GameManager {
     const sndBtn = $('#sndBtn');
     sndBtn.addEventListener('click', () => {
       const on = audio.toggle();
-      sndBtn.textContent = on ? '🔊' : '🔇';
+      sndBtn.classList.toggle('muted', !on);   // show the slash-through when muted
       if (on) audio.play('coin');
     });
     stage.addEventListener('pointerdown', () => audio.resume(), { passive:true });
