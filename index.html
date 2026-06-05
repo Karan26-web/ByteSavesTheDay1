@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Byte Saves The Day · Energy Farm</title>
 <!-- chunky rounded bubble font for the playful title -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,8 +23,10 @@
 
    KEY IDEA FOR ALIGNMENT:
    Everything lives inside #board, a fixed 16:9 element that exactly
-   matches Background.svg (1920x1080). The board is scaled to "cover"
-   the viewport. Because the board shares the background's aspect ratio,
+   matches Background.svg (1920x1080). The board is scaled to "contain"
+   (fit entirely inside) the viewport — shrinking the window shrinks the
+   whole scene rather than cropping it; leftover space is letterboxed.
+   Because the board shares the background's aspect ratio,
    percentage positions map directly onto the background's painted tiles
    — so Byte, the glow tile and the pods sit on the real path/grass cells.
 
@@ -38,20 +40,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   -webkit-user-select:none;user-select:none;touch-action:manipulation;}
 
 /* ---------- Stage (viewport) ---------- */
-#stage{position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;background:#243018;}
-#stage::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:60;
-  background:linear-gradient(180deg, rgba(20,40,20,.26) 0%, rgba(0,0,0,0) 16%,
-             rgba(0,0,0,0) 74%, rgba(20,40,20,.28) 100%);}
+/* --app-w/--app-h are the REAL visible viewport in px, set from JS (window.innerWidth/Height +
+   visualViewport) so mobile browsers' address-bar show/hide can't leave the 16:9 board short or
+   clipped. They fall back to dvh/vh units (then vw/vh) for the first paint and no-JS case. */
+/* background here is the LETTERBOX fill — the solid color shown in the bars when the window
+   isn't 16:9 and the contained board doesn't reach an edge. Soft sky tone to blend with the art. */
+#stage{position:fixed;inset:0;overflow:hidden;background:#d8e7f5;
+  width:var(--app-w,100vw);height:var(--app-h,100dvh);}
+@supports not (height:100dvh){#stage{height:var(--app-h,100vh);}}
+/* Top/bottom vignette that frames the playfield. Scoped to #board (not #stage) so it scales
+   WITH the contained 16:9 scene and never tints the letterbox bars — keeping the bars a clean
+   solid color. See #board::after below. */
 
 /* ---------- Board: 16:9, covers the viewport, holds the background ---------- */
 #board{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:max(100vw, calc(100vh * 16 / 9));
-  height:max(100vh, calc(100vw * 9 / 16));
+  /* CONTAIN (fit): the whole 16:9 board scales to the LARGEST size that fits ENTIRELY inside the
+     viewport, so shrinking the window shrinks the scene instead of cropping it. Any leftover space
+     shows as letterbox bars (the #stage background). Use max() instead of min() here for COVER. */
+  width:min(var(--app-w,100vw), calc(var(--app-h,100vh) * 16 / 9));
+  height:min(var(--app-h,100vh), calc(var(--app-w,100vw) * 9 / 16));
   background:url('assets/Background.svg') center center / 100% 100% no-repeat;}
 #board::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
   opacity:0;mix-blend-mode:soft-light;transition:opacity .45s ease, background .45s ease;}
 #board.field-1::before{opacity:.28;background:linear-gradient(90deg, rgba(74,194,255,.55), rgba(146,230,70,.2));}
 #board.field-2::before{opacity:.3;background:linear-gradient(90deg, rgba(255,216,76,.5), rgba(74,190,120,.25));}
+/* playfield vignette (moved off #stage so the letterbox bars stay clean) */
+#board::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:50;
+  background:linear-gradient(180deg, rgba(20,40,20,.26) 0%, rgba(0,0,0,0) 16%,
+             rgba(0,0,0,0) 74%, rgba(20,40,20,.28) 100%);}
 
 .layer{position:absolute;inset:0;}
 #objectLayer{z-index:20;}     /* pods (children of the board → grid-aligned) */
@@ -490,7 +506,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:opacity .5s ease;}
 #startScreen.hide{opacity:0;pointer-events:none;}
 /* Glossy green 3D PLAY button (bottom-right), matching the splash art style */
-#startScreen .play-btn{position:absolute;right:9%;bottom:9%;
+#startScreen .play-btn{position:absolute;
+  right:calc(9% + env(safe-area-inset-right,0px));bottom:calc(9% + env(safe-area-inset-bottom,0px));
   display:flex;align-items:center;justify-content:center;gap:.38em;
   font-family:inherit;font-weight:900;font-size:clamp(20px,5vw,40px);letter-spacing:.05em;
   color:#fff;text-shadow:0 2px 0 rgba(20,80,10,.5),0 4px 7px rgba(0,0,0,.3);
@@ -545,7 +562,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   opacity:0;transition:opacity .6s ease;pointer-events:auto;}
 #win.show{display:flex;opacity:1;}
 /* Glossy 3D blue NEXT button (bottom-right), matching the start-gate art style */
-#win button{position:absolute;right:9%;bottom:9%;
+#win button{position:absolute;
+  right:calc(9% + env(safe-area-inset-right,0px));bottom:calc(9% + env(safe-area-inset-bottom,0px));
   font:inherit;font-weight:900;font-size:clamp(18px,4.4vw,34px);letter-spacing:.04em;
   color:#fff;text-shadow:0 2px 0 rgba(10,55,90,.5),0 4px 7px rgba(0,0,0,.3);
   padding:.4em 1.7em .46em;border-radius:999px;cursor:pointer;
@@ -1906,6 +1924,7 @@ class GameManager {
 
   async beginLevel(){
     const cfg = this.levels[this.level];
+    this._wrongThisLevel = false;            // tracks a wrong attempt on THIS level (reset per level)
     this.setField(this.level);
     this._resolvePathX();                    // pathway column for this background
     this._placeByteColumn(this._pathX);      // Byte stands ON the pathway
@@ -2002,7 +2021,9 @@ class GameManager {
     await sleep(700);
     this.byte.stopCharge(); this.byte.faceForward();
 
-    await this.showDistanceTeaching();        // reinforce the near/far distance for this pod
+    // Reinforce the near/far distance — but ONLY on a clean (first-try) correct. If the user
+    // already answered wrong on this level, they just saw the teaching, so don't repeat it.
+    if (!this._wrongThisLevel) await this.showDistanceTeaching();
 
     this.level++;
     if (this.level >= this.levels.length) await this.win();
@@ -2011,6 +2032,7 @@ class GameManager {
   }
 
   async wrongSequence(pod){
+    this._wrongThisLevel = true;                 // remember it: skip the teaching on a later correct
     pod.open();                                  // lid pops + flies off the top
     await sleep(460);                            // let the cap clear before the bunny appears
     playSound('wrong');
@@ -2116,6 +2138,24 @@ window.addEventListener('load', () => {
   else if (portraitMQ.addListener) portraitMQ.addListener(applyOrientation);   // older Safari
   window.addEventListener('orientationchange', applyOrientation);
   applyOrientation();                   // set the correct state on first load
+
+  // ---- Real-viewport sizing -------------------------------------------------------------
+  // Pin --app-w/--app-h to the ACTUAL visible viewport so the 16:9 cover board always fills the
+  // screen exactly — defeating the mobile "100vh includes the address bar" gap that otherwise
+  // leaves a strip of background showing or clips the bottom when the bar hides. visualViewport
+  // (when present) reports the live, post-bar size; we fall back to innerWidth/Height.
+  const syncViewport = () => {
+    const vv = window.visualViewport;
+    const w = (vv && vv.width)  || window.innerWidth;
+    const h = (vv && vv.height) || window.innerHeight;
+    const r = document.documentElement.style;
+    r.setProperty('--app-w', w + 'px');
+    r.setProperty('--app-h', h + 'px');
+  };
+  syncViewport();
+  window.addEventListener('resize', syncViewport);
+  window.addEventListener('orientationchange', syncViewport);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', syncViewport);
 
   // The PLAY button (only) unlocks the AudioContext (browser autoplay policy) AND kicks
   // off Byte's entrance — so every movement sound is audible from the start.
