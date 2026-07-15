@@ -9,13 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap" rel="stylesheet" />
 <!-- preload the stretch-arm asset so the first reach never flashes -->
-<link rel="preload" as="image" href="assets/ByteRightHandExtended.svg" />
-<link rel="preload" as="image" href="assets/PreLBDScreen.png" />
-<link rel="preload" as="image" href="assets/PostLBD.png" />
-<link rel="preload" as="image" href="assets/PodOpen.png" />
-<link rel="preload" as="image" href="assets/PodCap.png" />
-<link rel="preload" as="image" href="assets/DialoageBox1.png" />
-<link rel="preload" as="image" href="assets/DialoageBox2.png" />
+<link rel="preload" as="image" href="assets/ByteRightHandExtended.webp" />
+<link rel="preload" as="image" href="assets/PreLBDScreen.webp" />
+<link rel="preload" as="image" href="assets/PostLBD.webp" />
+<link rel="preload" as="image" href="assets/PodOpen.webp" />
+<link rel="preload" as="image" href="assets/PodCap.webp" />
+<link rel="preload" as="image" href="assets/DialoageBox1.webp" />
+<link rel="preload" as="image" href="assets/DialoageBox2.webp" />
 <style>
 /* ============================================================
    BYTE SAVES THE DAY — ENERGY FARM
@@ -23,7 +23,7 @@
 
    KEY IDEA FOR ALIGNMENT:
    Everything lives inside #board, a fixed 16:9 element that exactly
-   matches Background.svg (1920x1080). The board is scaled to "contain"
+   matches Background.webp (1920x1080). The board is scaled to "contain"
    (fit entirely inside) the viewport — shrinking the window shrinks the
    whole scene rather than cropping it; leftover space is letterboxed.
    Because the board shares the background's aspect ratio,
@@ -59,7 +59,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
      shows as letterbox bars (the #stage background). Use max() instead of min() here for COVER. */
   width:min(var(--app-w,100vw), calc(var(--app-h,100vh) * 16 / 9));
   height:min(var(--app-h,100vh), calc(var(--app-w,100vw) * 9 / 16));
-  background:url('assets/Background.svg') center center / 100% 100% no-repeat;}
+  background:url('assets/Background.webp') center center / 100% 100% no-repeat;}
 #board::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
   opacity:0;mix-blend-mode:soft-light;transition:opacity .45s ease, background .45s ease;}
 #board.field-1::before{opacity:.28;background:linear-gradient(90deg, rgba(74,194,255,.55), rgba(146,230,70,.2));}
@@ -125,8 +125,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 #byte .byte-breath{position:relative;height:100%;
   transform-origin:50% 100%;transition:transform .35s ease;}
 /* --byteScale corrects for the no-hand turn sprites filling more of their frame than
-   byte.png, so Byte keeps the SAME visual size when it turns (char heights match:
-   byte.png fills .7115 of its frame, the no-hand sprites .9856 → .7115/.9856 ≈ .72).
+   byte.webp, so Byte keeps the SAME visual size when it turns (char heights match:
+   byte.webp fills .7115 of its frame, the no-hand sprites .9856 → .7115/.9856 ≈ .72).
    Origin = feet (stays grounded). */
 #byte img{display:block;height:100%;width:auto;pointer-events:none;
   position:relative;z-index:1;
@@ -135,16 +135,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:transform .55s cubic-bezier(.34,1.5,.5,1);}
 
 /* ---------- Turn pose = inline SVG (Byte turned, WITH his real arm) ----------
-   byte.png stays in the flow (it defines Byte's box); the turn SVG overlays it. The SVG is
+   byte.webp stays in the flow (it defines Byte's box); the turn SVG overlays it. The SVG is
    square and its character fills ~0.92 of the frame, so we scale up a touch and nudge down
-   so size + feet match byte.png for a seamless swap. Both tunable via --turnScale/--turnDrop. */
+   so size + feet match byte.webp for a seamless swap. Both tunable via --turnScale/--turnDrop. */
 #byte .byte-turn{position:absolute;left:50%;bottom:0;height:100%;width:auto;
   display:none;pointer-events:none;z-index:2;
   transform:translateX(-50%) translateY(var(--turnDrop,-7.7%)) scale(var(--turnScale,.79));
   transform-origin:50% 100%;}
 #byte .byte-turn svg,#byte .byte-turn img{display:block;height:100%;width:auto;overflow:visible;
   filter:drop-shadow(0 8px 10px rgba(0,0,0,.28));}
-/* Hide ONLY the base byte.png (direct child of .byte-breath) while turning — never the turn
+/* Hide ONLY the base byte.webp (direct child of .byte-breath) while turning — never the turn
    pose itself. The turn pose can be an inline <svg> (arm telescopes) OR, when the SVG fetch is
    blocked (e.g. opened from file://), a fallback <img> INSIDE .byte-turn. A broad `.turning img`
    rule would also hide that fallback img and make Byte vanish — so we scope it to the base img. */
@@ -209,7 +209,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
    The tube is a SINGLE element (no panels/seams), so its thickness is perfectly uniform at any
    length — only its WIDTH animates. Its left (shoulder) end tucks BEHIND Byte's body (z22 < #byte
    z25), so the arm reads as part of the shoulder with NO separate joint/node. The tube fill is the
-   exact ByteRightHandExtended.svg cylinder gradient (cream→white-sheen→beige→tan), matching the
+   exact ByteRightHandExtended.webp cylinder gradient (cream→white-sheen→beige→tan), matching the
    asset. Lives in #board (z22): ABOVE the pods (z20), BELOW Byte (z25). */
 .byte-stretch{position:absolute;z-index:22;pointer-events:none;
   transform-origin:left center;will-change:width,transform;
@@ -272,7 +272,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes bunnyRise{0%{transform:translate(-50%,55%) scale(.35) scaleX(var(--bflip,1));opacity:0}
   60%{transform:translate(-50%,-6%) scale(1.05) scaleX(var(--bflip,1));opacity:1}100%{transform:translate(-50%,0) scale(1) scaleX(var(--bflip,1));opacity:1}}
 
-/* the lid (PodCap.png) launches off the pod and flies out the top of the screen */
+/* the lid (PodCap.webp) launches off the pod and flies out the top of the screen */
 .pod-cap-fly{position:absolute;transform:translate(-50%,-50%);z-index:46;pointer-events:none;
   filter:drop-shadow(0 8px 10px rgba(0,0,0,.32));
   transition:top 1.05s cubic-bezier(.18,.6,.35,1), transform 1.05s cubic-bezier(.18,.6,.35,1);}
@@ -311,7 +311,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* ============================================================
    5) EFFECTS  (coin, particles, bunny) — screen-positioned
    ============================================================ */
-/* energy coin = Energy.svg (glowing bolt) */
+/* energy coin = Energy.webp (glowing bolt) */
 .coin{position:absolute;width:clamp(55px,4.5vw,90px);height:auto;
   transform:translate(-50%,-50%);z-index:42;pointer-events:none;
   transition:transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease;
@@ -355,19 +355,51 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* ============================================================
    6) UI  (screen-fixed)
    ============================================================ */
-#battery{display:none !important;position:absolute;top:clamp(12px,3vh,22px);left:50%;transform:translateX(-50%);
-  align-items:center;gap:8px;
-  background:rgba(255,255,255,.9);border-radius:999px;padding:6px 14px 6px 10px;
-  box-shadow:0 5px 14px rgba(0,0,0,.2);pointer-events:none;}
-#battery .cell{position:relative;width:clamp(46px,12vw,64px);height:clamp(20px,5vw,26px);
-  border:3px solid #4a4a4a;border-radius:6px;background:#eef3ee;overflow:hidden;}
-#battery .cell::after{content:"";position:absolute;right:-7px;top:50%;transform:translateY(-50%);
-  width:5px;height:45%;background:#4a4a4a;border-radius:0 3px 3px 0;}
-#battery .fill{position:absolute;inset:2px;width:15%;border-radius:3px;
-  background:linear-gradient(90deg,#ff5a5a,#ff8a3d);
-  transition:width .8s cubic-bezier(.4,1,.5,1), background .6s ease;}
-#battery .pct{font-weight:800;color:#3a3a3a;font-size:clamp(13px,3.4vw,17px);min-width:3ch;text-align:right;}
-#battery .bolt{font-size:clamp(15px,4vw,20px);}
+/* 8-slot ENERGY COUNTER (top-left): silver capsule, round teal badge with the Energy bolt,
+   and 8 glossy slots in a recessed track. Slots sit grey until their Energy Cell is earned,
+   then light up along the green → yellow → orange → red → sparkling-cyan finale sequence.
+   One slot per Energy Cell; the game is complete at 8/8. */
+#battery{position:absolute;top:clamp(16px,4vh,30px);left:clamp(12px,3vw,24px);
+  display:flex;align-items:center;
+  background:linear-gradient(180deg,#f4f6f8,#c9cfd6 45%,#aeb6bf);
+  border-radius:999px;padding:clamp(4px,.9vw,6px) clamp(10px,2vw,14px) clamp(4px,.9vw,6px) 4px;
+  box-shadow:0 6px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 3px rgba(0,0,0,.18);
+  pointer-events:none;
+  opacity:0;transform:translateY(-14px);
+  transition:opacity .4s ease, transform .4s cubic-bezier(.34,1.4,.5,1);}
+#battery.show{opacity:1;transform:translateY(0);}
+/* round energy badge on the left — silver ring, teal face, the Energy bolt art */
+#battery .badge{position:relative;z-index:1;flex:none;display:flex;align-items:center;justify-content:center;
+  width:clamp(44px,10vw,60px);height:clamp(44px,10vw,60px);
+  margin:calc(clamp(44px,10vw,60px)/-6) clamp(8px,1.6vw,12px) calc(clamp(44px,10vw,60px)/-6) -2px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#54d6c6,#1e9e93 72%);
+  border:clamp(4px,.9vw,5px) solid #e3e8ed;
+  box-shadow:0 4px 10px rgba(0,0,0,.35), inset 0 3px 6px rgba(255,255,255,.35), inset 0 -3px 6px rgba(0,0,0,.25);}
+#battery .badge img{width:84%;height:90%;object-fit:contain;transform:translateY(5%);
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));}
+/* recessed track holding the 8 slots */
+#battery .case{display:flex;gap:clamp(3px,.7vw,5px);padding:clamp(3px,.7vw,5px);
+  border-radius:clamp(8px,1.8vw,12px);background:#e9edf1;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.7);}
+/* one glossy rounded-square slot; grey until earned */
+#battery .slot{position:relative;overflow:hidden;
+  width:clamp(12px,2.6vw,18px);height:clamp(20px,4.4vw,30px);
+  border-radius:clamp(4px,.9vw,6px);
+  background:linear-gradient(180deg,#cfd4da,#9aa2ab);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 3px rgba(0,0,0,.2);
+  transition:background .35s ease, box-shadow .35s ease;}
+#battery .slot::after{content:"";position:absolute;left:12%;right:12%;top:8%;height:30%;
+  border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.05));}
+#battery .slot.filled{box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 3px rgba(0,0,0,.25),
+  0 0 10px rgba(255,255,255,.35);}
+#battery .slot.filled:nth-child(-n+4){background:linear-gradient(180deg,#8fe25d,#4cbb3a);}
+#battery .slot.filled:nth-child(5){background:linear-gradient(180deg,#ffe066,#f6c33b);}
+#battery .slot.filled:nth-child(6){background:linear-gradient(180deg,#ffd23f,#f0a92e);}
+#battery .slot.filled:nth-child(7){background:linear-gradient(180deg,#ffb45e,#f28c2e);}
+#battery .slot.filled:nth-child(8){background:linear-gradient(180deg,#f97f6d,#e2402f);}
+@keyframes slotPop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+#battery .slot.pop{animation:slotPop .5s cubic-bezier(.34,1.6,.5,1);}
 
 #instruction{position:absolute;left:50%;bottom:clamp(16px,4vh,34px);transform:translateX(-50%) translateY(20px);
   width:min(86vw,560px);background:rgba(255,255,255,.96);border-radius:22px;
@@ -386,7 +418,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 @keyframes blink{50%{opacity:0}}
 @keyframes contPulse{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 
-/* ── Instruction panel: the InstructionPanel.svg banner (cream, soft green border) with the
+/* ── Instruction panel: the InstructionPanel.webp banner (cream, soft green border) with the
    instruction text centred on it. The panel pops in, then the text fades up — with the near/far
    keyword in red so it stands out. ── */
 #instrPanel{position:absolute;left:50%;top:clamp(0px,1vh,14px);transform:translateX(-50%);
@@ -415,7 +447,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 #bigMsg.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 
 /* ── Cloud transition (between fields): two banks built from the real cloud art
-     (assets/clouds/cloudN.svg, sliced out of MultipleCloudAssets.svg) drift in from the left and
+     (assets/clouds/cloudN.webp, sliced out of MultipleCloudAssets.svg) drift in from the left and
      right over a sky-blue sky, meet to blanket the centre (~96% covered), hold, then part back out
      to the sides. The curtain's opaque sky-blue background IS the sky (and what hides the field
      swap); the cloud images are layered decoration — a softer BACK layer for depth + a bright
@@ -472,7 +504,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   filter:blur(28px);}
 #welcomeScene.show .welcome-glow{animation:welcomeGlow 3s ease-in-out infinite alternate;}
 /* premium puzzle-game logo: cream fill, slim Byte-cyan stroke, soft blue drop + yellow glow */
-/* WelcomeText.svg art (701×287) replaces the typed title — sized by width, keeps the pop/float */
+/* WelcomeText.webp art (701×287) replaces the typed title — sized by width, keeps the pop/float */
 #welcomeScene .welcome-title{position:relative;z-index:1;display:block;
   width:clamp(280px,62vw,640px);height:auto;
   filter:drop-shadow(0 7px 0 rgba(0,120,150,.28)) drop-shadow(0 0 24px rgba(255,230,80,.4));
@@ -502,7 +534,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 
 /* ---------- Start gate ---------- */
 #startScreen{position:absolute;inset:0;z-index:95;cursor:pointer;
-  background:#8ed0ea url("assets/PreLBDScreen.png") center/cover no-repeat;
+  background:#8ed0ea url("assets/PreLBDScreen.webp") center/cover no-repeat;
   transition:opacity .5s ease;}
 #startScreen.hide{opacity:0;pointer-events:none;}
 /* Glossy green 3D PLAY button (bottom-right), matching the splash art style */
@@ -557,7 +589,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
    7) WIN SCREEN  (PostLBD splash — full-cover celebration art)
    ============================================================ */
 #win{position:absolute;inset:0;z-index:90;display:none;
-  background:#8ed0ea url("assets/PostLBD.png") center/cover no-repeat;
+  background:#8ed0ea url("assets/PostLBD.webp") center/cover no-repeat;
   align-items:center;justify-content:center;
   opacity:0;transition:opacity .6s ease;pointer-events:auto;}
 #win.show{display:flex;opacity:1;}
@@ -606,7 +638,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
       <div class="byte-float">
         <div class="byte-aura"></div>
         <div class="byte-breath">
-          <img src="assets/byte.png" alt="Byte the robot" draggable="false" />
+          <img src="assets/byte.webp" alt="Byte the robot" draggable="false" />
           <div class="byte-turn"></div>
         </div>
       </div>
@@ -619,90 +651,92 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   <!-- UI -->
   <div id="uiLayer" class="layer">
     <div id="battery">
-      <span class="bolt">🔋</span>
-      <div class="cell"><div class="fill"></div></div>
-      <span class="pct">15%</span>
+      <div class="badge"><img src="assets/Energy.webp" alt="" draggable="false" /></div>
+      <div class="case">
+        <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+        <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+      </div>
     </div>
     <div id="instrPanel">
-      <img class="ip-bg" src="assets/InstructionPanel.svg" alt="" draggable="false" />
+      <img class="ip-bg" src="assets/InstructionPanel.webp" alt="" draggable="false" />
       <div class="ip-text"></div>
     </div>
     <div id="bigMsg"></div>
     <div id="welcomeScene">
       <div class="welcome-glow"></div>
-      <img class="welcome-title" src="assets/WelcomeText.svg" alt="Welcome to the Energy Farm!" draggable="false" />
+      <img class="welcome-title" src="assets/WelcomeText.webp" alt="Welcome to the Energy Farm!" draggable="false" />
     </div>
     <div id="fieldCurtain">
       <div class="cloud-bank cb-left">
         <div class="clouds back">
-          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:64vh;top:-8%;left:2%;--din:.05s;--dout:.08s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:58vh;top:16%;left:-8%;--din:.10s;--dout:.20s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:70vh;top:37%;left:-6%;--din:.06s;--dout:.30s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:52vh;top:58%;left:-8%;--din:.12s;--dout:.12s">
-          <img class="cloud" src="assets/clouds/cloud3.svg" alt="" draggable="false" style="width:42vh;top:78%;left:0%;--din:.08s;--dout:.26s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:50vh;top:28%;left:34%;--din:.14s;--dout:.16s">
-          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:26vh;top:7%;left:36%;--din:.18s;--dout:.34s">
-          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:44vh;top:45%;left:14%;--din:.04s;--dout:.22s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:2%;left:-12%;--din:.09s;--dout:.10s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:54vh;top:50%;left:-12%;--din:.11s;--dout:.18s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:50vh;top:72%;left:-12%;--din:.07s;--dout:.28s">
-          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:40vh;top:22%;left:-8%;--din:.15s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud5.webp" alt="" draggable="false" style="width:64vh;top:-8%;left:2%;--din:.05s;--dout:.08s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:58vh;top:16%;left:-8%;--din:.10s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:70vh;top:37%;left:-6%;--din:.06s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:52vh;top:58%;left:-8%;--din:.12s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud3.webp" alt="" draggable="false" style="width:42vh;top:78%;left:0%;--din:.08s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:50vh;top:28%;left:34%;--din:.14s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud4.webp" alt="" draggable="false" style="width:26vh;top:7%;left:36%;--din:.18s;--dout:.34s">
+          <img class="cloud" src="assets/clouds/cloud2.webp" alt="" draggable="false" style="width:44vh;top:45%;left:14%;--din:.04s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:56vh;top:2%;left:-12%;--din:.09s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:54vh;top:50%;left:-12%;--din:.11s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:50vh;top:72%;left:-12%;--din:.07s;--dout:.28s">
+          <img class="cloud" src="assets/clouds/cloud4.webp" alt="" draggable="false" style="width:40vh;top:22%;left:-8%;--din:.15s;--dout:.14s">
         </div>
         <div class="clouds front">
-          <img class="cloud" src="assets/clouds/cloud7.svg" alt="" draggable="false" style="width:106vh;top:8%;left:8%;--din:.02s;--dout:.02s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:80vh;top:-12%;left:30%;--din:.06s;--dout:.12s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:76vh;top:52%;left:16%;--din:.10s;--dout:.06s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:66vh;top:32%;left:30%;--din:.04s;--dout:.24s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:30%;--din:.12s;--dout:.18s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:32vh;top:46%;left:47%;--din:.08s;--dout:.30s">
-          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:30vh;top:23%;left:1%;--din:.14s;--dout:.26s">
-          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:48vh;top:30%;left:-2%;--din:.03s;--dout:.10s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:56vh;top:70%;left:42%;--din:.16s;--dout:.20s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:60vh;top:-5%;left:14%;--din:.05s;--dout:.12s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:16%;left:1%;--din:.07s;--dout:.16s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:50vh;top:41%;left:33%;--din:.09s;--dout:.22s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:54vh;top:62%;left:6%;--din:.11s;--dout:.18s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:78vh;bottom:-14%;left:6%;--din:.03s;--dout:.06s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:-10%;--din:.09s;--dout:.16s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:64vh;bottom:-10%;left:22%;--din:.13s;--dout:.10s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:58vh;top:-10%;left:-10%;--din:.06s;--dout:.20s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:44vh;top:40%;left:-11%;--din:.10s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud7.webp" alt="" draggable="false" style="width:106vh;top:8%;left:8%;--din:.02s;--dout:.02s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:80vh;top:-12%;left:30%;--din:.06s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:76vh;top:52%;left:16%;--din:.10s;--dout:.06s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:66vh;top:32%;left:30%;--din:.04s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:62vh;bottom:-12%;left:30%;--din:.12s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:32vh;top:46%;left:47%;--din:.08s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud2.webp" alt="" draggable="false" style="width:30vh;top:23%;left:1%;--din:.14s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud5.webp" alt="" draggable="false" style="width:48vh;top:30%;left:-2%;--din:.03s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:56vh;top:70%;left:42%;--din:.16s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:60vh;top:-5%;left:14%;--din:.05s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:56vh;top:16%;left:1%;--din:.07s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:50vh;top:41%;left:33%;--din:.09s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:54vh;top:62%;left:6%;--din:.11s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:78vh;bottom:-14%;left:6%;--din:.03s;--dout:.06s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:62vh;bottom:-12%;left:-10%;--din:.09s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:64vh;bottom:-10%;left:22%;--din:.13s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:58vh;top:-10%;left:-10%;--din:.06s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:44vh;top:40%;left:-11%;--din:.10s;--dout:.24s">
         </div>
       </div>
       <div class="cloud-bank cb-right">
         <div class="clouds back">
-          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:64vh;top:-8%;left:2%;--din:.07s;--dout:.16s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:58vh;top:16%;left:-8%;--din:.12s;--dout:.10s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:70vh;top:37%;left:-6%;--din:.04s;--dout:.30s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:52vh;top:58%;left:-8%;--din:.10s;--dout:.22s">
-          <img class="cloud" src="assets/clouds/cloud3.svg" alt="" draggable="false" style="width:42vh;top:78%;left:0%;--din:.14s;--dout:.14s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:50vh;top:28%;left:34%;--din:.06s;--dout:.26s">
-          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:26vh;top:7%;left:36%;--din:.16s;--dout:.34s">
-          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:44vh;top:45%;left:14%;--din:.08s;--dout:.18s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:2%;left:-12%;--din:.11s;--dout:.12s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:54vh;top:50%;left:-12%;--din:.05s;--dout:.24s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:50vh;top:72%;left:-12%;--din:.13s;--dout:.20s">
-          <img class="cloud" src="assets/clouds/cloud4.svg" alt="" draggable="false" style="width:40vh;top:22%;left:-8%;--din:.09s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud5.webp" alt="" draggable="false" style="width:64vh;top:-8%;left:2%;--din:.07s;--dout:.16s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:58vh;top:16%;left:-8%;--din:.12s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:70vh;top:37%;left:-6%;--din:.04s;--dout:.30s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:52vh;top:58%;left:-8%;--din:.10s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud3.webp" alt="" draggable="false" style="width:42vh;top:78%;left:0%;--din:.14s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:50vh;top:28%;left:34%;--din:.06s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud4.webp" alt="" draggable="false" style="width:26vh;top:7%;left:36%;--din:.16s;--dout:.34s">
+          <img class="cloud" src="assets/clouds/cloud2.webp" alt="" draggable="false" style="width:44vh;top:45%;left:14%;--din:.08s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:56vh;top:2%;left:-12%;--din:.11s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:54vh;top:50%;left:-12%;--din:.05s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:50vh;top:72%;left:-12%;--din:.13s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud4.webp" alt="" draggable="false" style="width:40vh;top:22%;left:-8%;--din:.09s;--dout:.30s">
         </div>
         <div class="clouds front">
-          <img class="cloud" src="assets/clouds/cloud7.svg" alt="" draggable="false" style="width:106vh;top:8%;left:8%;--din:.04s;--dout:.08s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:80vh;top:-12%;left:30%;--din:.08s;--dout:.18s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:76vh;top:52%;left:16%;--din:.12s;--dout:.04s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:66vh;top:32%;left:30%;--din:.02s;--dout:.28s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:30%;--din:.10s;--dout:.14s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:32vh;top:46%;left:47%;--din:.06s;--dout:.32s">
-          <img class="cloud" src="assets/clouds/cloud2.svg" alt="" draggable="false" style="width:30vh;top:23%;left:1%;--din:.16s;--dout:.24s">
-          <img class="cloud" src="assets/clouds/cloud5.svg" alt="" draggable="false" style="width:48vh;top:30%;left:-2%;--din:.05s;--dout:.12s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:56vh;top:70%;left:42%;--din:.14s;--dout:.22s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:60vh;top:-5%;left:14%;--din:.07s;--dout:.10s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:56vh;top:16%;left:1%;--din:.09s;--dout:.20s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:50vh;top:41%;left:33%;--din:.05s;--dout:.26s">
-          <img class="cloud" src="assets/clouds/cloud1.svg" alt="" draggable="false" style="width:54vh;top:62%;left:6%;--din:.13s;--dout:.14s">
-          <img class="cloud" src="assets/clouds/cloud8.svg" alt="" draggable="false" style="width:78vh;bottom:-14%;left:6%;--din:.05s;--dout:.08s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:62vh;bottom:-12%;left:-10%;--din:.11s;--dout:.18s">
-          <img class="cloud" src="assets/clouds/cloud6.svg" alt="" draggable="false" style="width:64vh;bottom:-10%;left:22%;--din:.07s;--dout:.12s">
-          <img class="cloud" src="assets/clouds/cloud0.svg" alt="" draggable="false" style="width:58vh;top:-10%;left:-10%;--din:.04s;--dout:.22s">
-          <img class="cloud" src="assets/clouds/cloud9.svg" alt="" draggable="false" style="width:44vh;top:40%;left:-11%;--din:.12s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud7.webp" alt="" draggable="false" style="width:106vh;top:8%;left:8%;--din:.04s;--dout:.08s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:80vh;top:-12%;left:30%;--din:.08s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:76vh;top:52%;left:16%;--din:.12s;--dout:.04s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:66vh;top:32%;left:30%;--din:.02s;--dout:.28s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:62vh;bottom:-12%;left:30%;--din:.10s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:32vh;top:46%;left:47%;--din:.06s;--dout:.32s">
+          <img class="cloud" src="assets/clouds/cloud2.webp" alt="" draggable="false" style="width:30vh;top:23%;left:1%;--din:.16s;--dout:.24s">
+          <img class="cloud" src="assets/clouds/cloud5.webp" alt="" draggable="false" style="width:48vh;top:30%;left:-2%;--din:.05s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:56vh;top:70%;left:42%;--din:.14s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:60vh;top:-5%;left:14%;--din:.07s;--dout:.10s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:56vh;top:16%;left:1%;--din:.09s;--dout:.20s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:50vh;top:41%;left:33%;--din:.05s;--dout:.26s">
+          <img class="cloud" src="assets/clouds/cloud1.webp" alt="" draggable="false" style="width:54vh;top:62%;left:6%;--din:.13s;--dout:.14s">
+          <img class="cloud" src="assets/clouds/cloud8.webp" alt="" draggable="false" style="width:78vh;bottom:-14%;left:6%;--din:.05s;--dout:.08s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:62vh;bottom:-12%;left:-10%;--din:.11s;--dout:.18s">
+          <img class="cloud" src="assets/clouds/cloud6.webp" alt="" draggable="false" style="width:64vh;bottom:-10%;left:22%;--din:.07s;--dout:.12s">
+          <img class="cloud" src="assets/clouds/cloud0.webp" alt="" draggable="false" style="width:58vh;top:-10%;left:-10%;--din:.04s;--dout:.22s">
+          <img class="cloud" src="assets/clouds/cloud9.webp" alt="" draggable="false" style="width:44vh;top:40%;left:-11%;--din:.12s;--dout:.26s">
         </div>
       </div>
       <span class="fc-label">Next Field</span>
@@ -909,11 +943,11 @@ const ARM_OVERLAP = 0.16;                         // root tuck-behind, as a frac
 const SHOULDER_POINTS = { right: { x: 0.64, y: 0.52 }, left: { x: 0.36, y: 0.52 } };
 
 /* ------------------------------------------------------------
-   PATH GEOMETRY (in BOARD %, matching Background.svg 1920x1080)
+   PATH GEOMETRY (in BOARD %, matching Background.webp 1920x1080)
    The painted path runs down the centre; its 6 cells sit at these
    vertical centres. Byte now slides along the path instead of hopping.
    ------------------------------------------------------------ */
-/* Grid derived from Background.svg (1920x1080): grass tiles 131.877×143.503.
+/* Grid derived from Background.webp (1920x1080): grass tiles 131.877×143.503.
    Column centres step ~6.6% of width; the path is the centre column. */
 const PATH_X    = 50.13;                                   // path/centre column (x %)
 const TILE_TOPS = [16.9, 29.5, 42.0, 54.3, 66.7, 79.0];    // grass row centres (y %)
@@ -924,22 +958,42 @@ const PLAY_TILE = TILE_TOPS[2]; // Byte's play row — SAME tile row as the pods
 /* ============================================================
    AudioManager — synthesised, soft kid-friendly SFX (Web Audio API)
    ============================================================ */
+/* Narrator voice-over lines (audios/LBD 1) — one line per tutorial / instruction beat.
+   Keys are referenced via audio.playVoice(key); filenames are kept verbatim from the pack. */
+const VO_FILES = {
+  title:       "Byte_s Energy Hunt.ogg",                       // start screen → PLAY tapped
+  welcome:     "welcome to the energy farm.ogg",               // welcome title
+  pod1:        "this is a pod.ogg",                            // intro bubble, left pod
+  pod2:        "this is a pod to .ogg",                        // intro bubble, right pod ("…too")
+  energyCells: "Energy cells are stored in these pods.ogg",    // intro hint, scene 4
+  helpByte:    "Help Byte collect the cells and power up!.ogg",// intro hint, scene 5 (mission)
+  nearAndFar:  "Near and Far.ogg",                             // lesson title, wipe into level 1
+  cellNear:    "The Pod near Byte has a cell.ogg",             // level hint 1 (near variant)
+  tapNear:     "Tap on the pod near Byte.ogg",                 // level hint 2 (near variant)
+  tapFar:      "Tap on the Pod far from Byte.ogg",             // level hint 2 (far variant)
+  teachNear:   "This pod is near Byte.ogg",                    // distance-teaching bubble (close pod)
+  teachFar:    "That pod is far from Byte.ogg",                // distance-teaching bubble (far pod)
+  energyHunt:  "Energy Hunt.ogg",                              // short title sting (unused for now)
+};
+/* Pause after each narrated line before the next beat starts — breathing room for kids
+   (lines run 1.7-3.8s, so ~1.3s of quiet keeps the pace gentle without dragging). */
+const VO_GAP = 1300;
 class AudioManager {
   constructor(){ this.ctx=null; this.master=null; this.enabled=true; this._stepIdx=0; this._footIdx=0;
-    this.theme=null; this.files={}; }
+    this.theme=null; this.files={}; this.voices={}; this._vo=null; }
   init(){
     // File-based audio (works without the synth AudioContext): looping theme + one-shot SFX.
     if (!this.theme){
-      this.theme = new Audio('audios/themeMusic.mp3');
+      this.theme = new Audio('audios/themeMusic.ogg');
       this.theme.loop = true; this.theme.volume = 0.4; this.theme.preload = 'auto';
       // One-shot file SFX → [filename, volume]. Keys are referenced via audio.playFile(key).
       const FILE_SFX = {
-        jump:       ['cartoon-jump-6462.mp3',        0.85],   // energy cell pops out
-        bunny:      ['BunnySound.mp3',               0.85],   // bunny rises from a wrong pod
-        buttonTap:  ['ButtonTap.mp3',                0.9 ],   // Byte's hand presses the pod button
-        headRotate: ['ByteHeadRotationSound.mp3',    0.7 ],   // Byte turns his head left / right
-        tileAnim:   ['TutorialTileAnimationSound.mp3',0.7 ],  // near/far tutorial tiles glow in
-        capThrow:   ['CapSound.mp3',                 0.9 ],   // pod lid pops + flies off the screen
+        jump:       ['cartoon-jump-6462.ogg',        0.85],   // energy cell pops out
+        bunny:      ['BunnySound.ogg',               0.85],   // bunny rises from a wrong pod
+        buttonTap:  ['ButtonTap.ogg',                0.9 ],   // Byte's hand presses the pod button
+        headRotate: ['ByteHeadRotationSound.ogg',    0.7 ],   // Byte turns his head left / right
+        tileAnim:   ['TutorialTileAnimationSound.ogg',0.7 ],  // near/far tutorial tiles glow in
+        capThrow:   ['CapSound.ogg',                 0.9 ],   // pod lid pops + flies off the screen
       };
       for (const [k, [f, v]] of Object.entries(FILE_SFX)){
         this.files[k] = new Audio('audios/' + f);
@@ -947,8 +1001,13 @@ class AudioManager {
       }
       // Byte's walking sound: a continuous loop played only WHILE he walks (start/stop with the
       // movement), so the footstep audio runs for exactly as long as Byte is moving.
-      this.move = new Audio('audios/ByteMovement.mp3');
+      this.move = new Audio('audios/ByteMovement.ogg');
       this.move.loop = true; this.move.volume = 0.6; this.move.preload = 'auto';
+      // Narrator voice-overs (one channel — a new line always cuts off the previous one).
+      for (const [k, f] of Object.entries(VO_FILES)){
+        this.voices[k] = new Audio('audios/LBD 1/' + f);
+        this.voices[k].volume = 1; this.voices[k].preload = 'auto';
+      }
     }
     if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -968,10 +1027,36 @@ class AudioManager {
   /** Play a one-shot file SFX (e.g. 'jump') from its start, even if already mid-play. */
   playFile(name){ const a=this.files[name]; if (!a || !this.enabled) return;
     try { a.currentTime=0; const p=a.play(); if (p&&p.catch) p.catch(()=>{}); } catch(e){} }
+  /** Narrator voice-over: single channel — starting a line always cuts off the previous one,
+      so instruction beats that follow each other quickly (hint 1 → hint 2) never overlap. */
+  playVoice(name){ const a=this.voices[name]; if (!a) return;
+    this.stopVoice();
+    if (!this.enabled) return;
+    this._vo = a;
+    try { a.currentTime=0; const p=a.play(); if (p&&p.catch) p.catch(()=>{}); } catch(e){} }
+  stopVoice(){ if (this._vo){ try { this._vo.pause(); } catch(e){} this._vo = null; } }
+  /** Like playVoice, but resolves when the line FINISHES — used by the auto-advancing tutorial.
+      Always resolves (muted, playback blocked, or stopVoice mid-line), so the flow never hangs:
+      muted/blocked falls back to the line's duration (or ~2.2s if metadata isn't loaded yet). */
+  playVoiceEnded(name){
+    const a = this.voices[name];
+    const fallback = a && isFinite(a.duration) && a.duration > 0 ? a.duration * 1000 : 2200;
+    if (!a) return sleep(fallback);
+    this.stopVoice();
+    if (!this.enabled) return sleep(fallback);
+    this._vo = a;
+    return new Promise(res => {
+      const done = () => { a.removeEventListener('ended', done); a.removeEventListener('pause', done); res(); };
+      a.addEventListener('ended', done);
+      a.addEventListener('pause', done);        // stopVoice()/mute mid-line still advances the flow
+      try { a.currentTime = 0; const p = a.play(); if (p && p.catch) p.catch(() => setTimeout(done, fallback)); }
+      catch(e){ setTimeout(done, fallback); }
+    });
+  }
   toggle(){ this.enabled = !this.enabled;
     if (this.theme){ if (this.enabled){ if (this.theme.paused){ const p=this.theme.play(); if (p&&p.catch) p.catch(()=>{}); } }
                      else this.theme.pause(); }
-    if (!this.enabled) this.stopMove();   // also cut the walk loop when muting
+    if (!this.enabled){ this.stopMove(); this.stopVoice(); }   // also cut walk loop + narration when muting
     return this.enabled; }
 
   _tone({ freq, dur=.2, type='sine', gain=.25, slideTo=null, when=0 }){
@@ -1133,13 +1218,13 @@ class ParticleSystem {
    Byte
    ============================================================ */
 const BYTE_SPRITES = {
-  forward: 'assets/byte.png',                   // back view — walking up the path
+  forward: 'assets/byte.webp',                   // back view — walking up the path
 };
 /* Turn poses are inline SVGs (Byte already turned, WITH his real arm). The reaching arm paths are
    isolated into a <g class="byte-arm"> so it can be HIDDEN during a reach — the proper uniform-tube
-   stretch arm (.byte-stretch, cropped from ByteRightHandExtended.svg) overlays the empty shoulder
+   stretch arm (.byte-stretch, cropped from ByteRightHandExtended.webp) overlays the empty shoulder
    instead, giving a constant-thickness arm + hand rather than a stretched blade. */
-const TURN_SVG = { left: 'assets/leftTurnByte.svg', right: 'assets/RightTurnByte.svg' };
+const TURN_SVG = { left: 'assets/leftTurnByte.webp', right: 'assets/RightTurnByte.webp' };
 /* Which gradient-filled paths form the reaching arm/hand, per side. */
 const TURN_ARM = {
   left:  { paints: ['paint2_linear', 'paint3_linear'], origin: 'right center' },
@@ -1194,7 +1279,7 @@ class Byte {
     this.el.style.transition = prev;
   }
 
-  /** Forward = byte.png (the in-flow <img>, which always defines Byte's box). */
+  /** Forward = byte.webp (the in-flow <img>, which always defines Byte's box). */
   faceForward(){
     if (this.facing === 'forward') return;
     this.facing = 'forward'; this.armEl = null; this._side = null;
@@ -1337,7 +1422,7 @@ class Byte {
    EnergyPod
    ============================================================ */
 /* each field uses its own pod artwork (closed + open), matching the LBD flow */
-const POD_ART_DEFAULT = { closed: 'assets/Pod.png', open: 'assets/PodOpen.png' };
+const POD_ART_DEFAULT = { closed: 'assets/Pod.webp', open: 'assets/PodOpen.webp' };
 
 class EnergyPod {
   constructor({ leftPct, topPct, hasEnergy, hint, side = 'left', art = POD_ART_DEFAULT }){
@@ -1389,7 +1474,7 @@ class EnergyPod {
         <path d="M47 104Q47 26 171 26Q295 26 295 104V330Q295 408 171 408Q47 408 47 330Z"
               fill="none" stroke="#ffe86a" stroke-opacity="0.55" stroke-width="12" filter="url(#${uid}gr)"/>
       </svg>
-      <img class="pod-bunny" src="assets/BunnyChar.png" alt="" draggable="false" />
+      <img class="pod-bunny" src="assets/BunnyChar.webp" alt="" draggable="false" />
       <img class="pod-img" src="${art.closed}" alt="Energy pod" draggable="false" />
       <div class="pod-flash"></div>`;
     this.img = this.el.querySelector('.pod-img');
@@ -1421,7 +1506,7 @@ class EnergyPod {
 
   /** Face the red button toward the centre path (Byte) — left pod points right (+x),
       right pod points left (-x) — and keep it consistent in BOTH closed and open states
-      so it never flips when the lid pops. Pod.png's button is +x, PodOpen.png's is -x. */
+      so it never flips when the lid pops. Pod.webp's button is +x, PodOpen.webp's is -x. */
   _setFacing(open){
     const desired = this.side === 'left' ? 1 : -1;   // +x for left pod, -x for right pod
     const artDir  = open ? -1 : 1;                    // natural button x-dir of the shown art
@@ -1437,12 +1522,12 @@ class EnergyPod {
     this._flyCap();
   }
 
-  /** the red lid (PodCap.png) shoots up off the pod and out the top of the screen */
+  /** the red lid (PodCap.webp) shoots up off the pod and out the top of the screen */
   _flyCap(){
     const c = centerOf(this.el);
     const cap = document.createElement('img');
     cap.className = 'pod-cap-fly';
-    cap.src = 'assets/PodCap.png'; cap.draggable = false;
+    cap.src = 'assets/PodCap.webp'; cap.draggable = false;
     cap.style.width = (this.el.clientWidth * 0.82) + 'px';
     cap.style.left  = c.x + 'px';
     cap.style.top   = (c.y - this.el.clientHeight * 0.42) + 'px';   // sit on the lid
@@ -1470,7 +1555,7 @@ class EnergyPod {
   reset(){
     this.el.classList.remove('open','burst','bunny-out');
     this.img.src = this.art.closed;
-    this._setFacing(false);   // restore closed-art facing (Pod.png) so the pod still faces Byte
+    this._setFacing(false);   // restore closed-art facing (Pod.webp) so the pod still faces Byte
   }
   destroy(){ this.disableTap(); this.el.remove(); }
 }
@@ -1487,10 +1572,10 @@ EnergyPod._n = 0;
      away  → "This pod is away from Byte."  (far/right pod — teaching screen 2)
    ============================================================ */
 const DLG = {
-  pod1:  { src:'assets/DialoageBox1.svg',          w:347, h:158, tailX:248/347, tailY:142/158 },
-  pod2:  { src:'assets/DialoageBox2.svg',          w:425, h:158, tailX:148/425, tailY:141.5/158 },
-  close: { src:'assets/ThisPodIsCloseToByte.svg',  w:198, h:158, tailX:106.166/198, tailY:141.5/158, scale:0.92 },
-  away:  { src:'assets/ThisPodIsAwayFromByte.svg', w:163, h:158, tailX:106.166/163, tailY:141.5/158, scale:0.92 },
+  pod1:  { src:'assets/DialoageBox1.webp',          w:347, h:158, tailX:248/347, tailY:142/158 },
+  pod2:  { src:'assets/DialoageBox2.webp',          w:425, h:158, tailX:148/425, tailY:141.5/158 },
+  close: { src:'assets/ThisPodIsCloseToByte.webp',  w:198, h:158, tailX:106.166/198, tailY:141.5/158, scale:0.92 },
+  away:  { src:'assets/ThisPodIsAwayFromByte.webp', w:163, h:158, tailX:106.166/163, tailY:141.5/158, scale:0.92 },
 };
 const DLG_BY_STEP = { left:'pod1', right:'pod2', close:'close', away:'away' };
 
@@ -1508,12 +1593,11 @@ class UIManager {
     this.welcome = $('#welcomeScene');
     this.fieldCurtain = $('#fieldCurtain');
     this.fcLabel = $('.fc-label', this.fieldCurtain);
-    this.battery = { fill: $('#battery .fill'), pct: $('#battery .pct') };
+    this.batteryEl = $('#battery');
+    this.batterySlots = [...this.batteryEl.querySelectorAll('.slot')];
     this.tapCatcher = $('#tapCatcher');
     this.tile = $('#tile');
-    this._battery = 15;
     this._dlg = null;                       // active pod-anchored tutorial bubble (if any)
-    this.setBattery(15, false);
     // Re-anchor the active dialogue whenever the board re-scales. Game objects (Byte, pods,
     // tile) are board-percentage positioned and reflow on their own; the dialogue is the one
     // screen-pixel element that must be recomputed, so it tracks its pod on every layout change.
@@ -1543,10 +1627,8 @@ class UIManager {
       this.tapCatcher.addEventListener('click', done);
     });
   }
-  /** Show a pre-made DialoageBox image near a pod (arrow points at the pod), wait for a
-      tap, then dismiss. left → DialoageBox1 (tail top-left), right → DialoageBox2 (tail
-      top-right). Image only — bubble/arrow/text are baked into the asset. */
-  /** Show a tutorial bubble (SVG art) anchored to a pod and wait for a tap. `step` selects the
+  /** Show a tutorial bubble anchored to a pod; it narrates its voice line and auto-dismisses
+      once the line ends (plus VO_GAP) — no tap needed. `step` selects the
       art/text: 'left'|'right' (the "This is a Pod" intro) or 'close'|'away' (the teaching screens).
       The bubble is ANCHORED TO THE POD object — _positionDialogue derives everything from the pod's
       live box and the resize/orientation listeners re-run it, so it follows the pod on any rescale. */
@@ -1555,13 +1637,18 @@ class UIManager {
     // mid-animation box and the tail ends up buried in the pod body).
     await Promise.all(podEl.getAnimations().map(a => a.finished.catch(() => {})));
     const cfg = DLG[DLG_BY_STEP[step] || step] || DLG.pod1;
+    // Narrate the bubble, and AUTO-ADVANCE once the line finishes (+ a kid-friendly gap) —
+    // no tap needed. Every bubble step has a matching voice line from the LBD 1 pack.
+    const VO_BY_STEP = { left:'pod1', right:'pod2', close:'teachNear', away:'teachFar' };
+    const voiceDone = VO_BY_STEP[step] ? audio.playVoiceEnded(VO_BY_STEP[step]) : sleep(2200);
     const img = document.createElement('img');
     img.className = 'tutorial-box'; img.alt = ''; img.draggable = false; img.src = cfg.src;
     board.appendChild(img);   // BOARD child → positioned in Figma-world %, scales with the board
     this._dlg = { img, podEl, cfg };
     this._positionDialogue();
     requestAnimationFrame(() => img.classList.add('show'));   // pop in: opacity 0→1, translateY (300ms)
-    await this.waitForTap();
+    await voiceDone;
+    await sleep(VO_GAP);
     this._dlg = null;
     img.classList.remove('show');
     await sleep(300);                                          // fade out (300ms)
@@ -1651,7 +1738,7 @@ class UIManager {
       this.welcome.appendChild(p);
     }
   }
-  /** Instruction panel: the InstructionPanel.svg banner pops in, then the text fades up. The
+  /** Instruction panel: the InstructionPanel.webp banner pops in, then the text fades up. The
       near/far keyword is wrapped in a red <span class="kw"> so it's highlighted. Non-blocking. */
   showHint(text){
     clearTimeout(this._ipT1); clearTimeout(this._ipT2);
@@ -1697,20 +1784,22 @@ class UIManager {
   /** glow tile follows Byte's current path cell (board %) */
   moveTile(topPercent){ this.tile.style.top = topPercent + '%'; this.tile.classList.add('show'); }
   hideTile(){ this.tile.classList.remove('show'); }
-  setBattery(pct, animate = true){
-    if (!this.battery.fill || !this.battery.pct) return;
-    this._battery = clamp(pct, 0, 100);
-    const f = this.battery.fill;
-    if (!animate) f.style.transition = 'none';
-    f.style.width = this._battery + '%';
-    if (!animate) requestAnimationFrame(() => f.style.transition = '');
-    this.battery.pct.textContent = Math.round(this._battery) + '%';
-    f.style.background = this._battery < 35
-      ? 'linear-gradient(90deg,#ff5a5a,#ff8a3d)'
-      : this._battery < 70
-        ? 'linear-gradient(90deg,#ffb13d,#ffe14d)'
-        : 'linear-gradient(90deg,#7ee04d,#39c44a)';
+  /** 8-slot battery HUD: light up the LAST `n` slots — the battery fills BACKWARDS, from the
+      right end toward the badge (so the empty grey cells sit on the left, like the design).
+      A newly earned slot pops as it fills. */
+  setBatterySlots(n){
+    const total = this.batterySlots.length;
+    this.batterySlots.forEach((s, i) => {
+      if (i >= total - n){
+        if (!s.classList.contains('filled')){
+          s.classList.add('filled','pop');
+          setTimeout(() => s.classList.remove('pop'), 550);
+        }
+      } else s.classList.remove('filled');
+    });
   }
+  showBattery(){ this.batteryEl.classList.add('show'); }
+  hideBattery(){ this.batteryEl.classList.remove('show'); }
 }
 
 /* ============================================================
@@ -1739,14 +1828,14 @@ const POD_ROW_Y = PLAY_TILE - POD_LIFT;       // pod row (slightly above Byte); 
    pixel-scan can't run from file:// — tainted-canvas — so the anchors are baked in here).
    Distances are intentionally asymmetric — that's what the near/far instruction tests. */
 const LEVEL_CONFIG = {
-  2: { background: 'Background1.svg', pathwayX: 30.10, leftDistance: 2, rightDistance: 6 },
-  3: { background: 'Background2.svg', pathwayX: 69.48, leftDistance: 5, rightDistance: 2 },
-  4: { background: 'Background3.svg', pathwayX: 43.23, leftDistance: 3, rightDistance: 4 },
-  5: { background: 'Background4.svg', pathwayX: 50.10, leftDistance: 5, rightDistance: 3 },
-  6: { background: 'Background5.svg', pathwayX: 36.56, leftDistance: 4, rightDistance: 2 },
-  7: { background: 'Background6.svg', pathwayX: 63.02, leftDistance: 5, rightDistance: 2 },
-  8: { background: 'Background7.svg', pathwayX: 17.19, leftDistance: 2, rightDistance: 5 },
-  9: { background: 'Background8.svg', pathwayX: 23.65, leftDistance: 2, rightDistance: 4 },
+  2: { background: 'Background1.webp', pathwayX: 30.10, leftDistance: 2, rightDistance: 6 },
+  3: { background: 'Background2.webp', pathwayX: 69.48, leftDistance: 5, rightDistance: 2 },
+  4: { background: 'Background3.webp', pathwayX: 43.23, leftDistance: 3, rightDistance: 4 },
+  5: { background: 'Background4.webp', pathwayX: 50.10, leftDistance: 5, rightDistance: 3 },
+  6: { background: 'Background5.webp', pathwayX: 36.56, leftDistance: 4, rightDistance: 2 },
+  7: { background: 'Background6.webp', pathwayX: 63.02, leftDistance: 5, rightDistance: 2 },
+  8: { background: 'Background7.webp', pathwayX: 17.19, leftDistance: 2, rightDistance: 5 },
+  9: { background: 'Background8.webp', pathwayX: 23.65, leftDistance: 2, rightDistance: 4 },
 };
 
 const POD_EDGE = 3;   // keep pods at least this % in from the board edges (stay tappable)
@@ -1760,9 +1849,14 @@ class GameManager {
     this.busy = false;
     this.canTap = false;
 
-    /* Level 0 = the tutorial (unchanged). Levels 1-8 are the Near/Far puzzle levels
-       (user Levels 2-9), generated from LEVEL_CONFIG: each is a `puzzle` with its own
-       farm background and left/right pod distances. */
+    /* Level 0 = the tutorial (unchanged). Levels 1+ are the Near/Far puzzle ITERATIONS —
+       the 8 farm configs from LEVEL_CONFIG, reused cyclically if more rounds are needed.
+       Difficulty scaffold (see _tier):
+         iterations 1-4  'guided'      → 2 chances; wrong once = reinforced teaching + retry
+         iterations 5-8  'reduced'     → 1 chance;  wrong = teaching, then next round, NO cell
+         iterations 9+   'independent' → 1 chance;  wrong = straight to next round, no teaching
+       The game is complete when the 8-slot battery is FULL (8 cells collected) — missed
+       rounds simply mean extra 'independent' rounds until all 8 slots are earned. */
     this.levels = [
       // Level 1 (tutorial): the LEFT pod is the near one and holds the cell, so the
       // pod-choice shows the "near" instruction to introduce the Near/Far idea.
@@ -1776,6 +1870,7 @@ class GameManager {
         pathwayX: c.pathwayX, leftDistance: c.leftDistance, rightDistance: c.rightDistance });
     }
     this.level = 0;
+    this.cells = 0;                // Energy Cells earned (fills the 8-slot battery; 8 = win)
     this._instructionType = 'near';
     this._pathX = PATH_X;        // the current level's dirt-pathway column (board %)
     // preload the farm backgrounds so the per-level swap is instant (no flash)
@@ -1801,10 +1896,23 @@ class GameManager {
     await this.beginLevel();
   }
 
+  /** Config for a level number. 0 = tutorial; 1+ cycle through the 8 puzzle farms, so the
+      game can run PAST iteration 8 (extra 'independent' rounds) until the battery is full. */
+  _cfg(level){
+    if (level <= 0) return this.levels[0];
+    return this.levels[((level - 1) % (this.levels.length - 1)) + 1];
+  }
+  /** Difficulty tier for the CURRENT iteration (this.level is the iteration number). */
+  _tier(){
+    if (this.level <= 4) return 'guided';        // (tutorial included) 2 chances + teaching
+    if (this.level <= 8) return 'reduced';       // 1 chance, teaching on a miss
+    return 'independent';                        // 1 chance, no teaching
+  }
+
   setField(index){
     board.classList.remove('field-1','field-2');   // no colour tint on the puzzle farms
-    const cfg = this.levels[index];
-    // Puzzle levels swap the farm SVG; the tutorial uses the CSS default (Background.svg).
+    const cfg = this._cfg(index);
+    // Puzzle levels swap the farm SVG; the tutorial uses the CSS default (Background.webp).
     // Only the background-image changes — CSS keeps size (100% 100%) + centre, so the
     // 1920×1080 SVGs cover the board responsively with no distortion.
     board.style.backgroundImage = (cfg && cfg.puzzle) ? `url('assets/${cfg.background}')` : '';
@@ -1813,7 +1921,7 @@ class GameManager {
   /** The current level's vertical-pathway column (board %). Tutorial uses the centre path
       (PATH_X); each puzzle level uses its background's baked-in pathwayX anchor. */
   _resolvePathX(){
-    const cfg = this.levels[this.level];
+    const cfg = this._cfg(this.level);
     this._pathX = (cfg && cfg.puzzle && cfg.pathwayX != null) ? cfg.pathwayX : PATH_X;
     return this._pathX;
   }
@@ -1826,7 +1934,9 @@ class GameManager {
   }
 
   async runIntro(){
+    const welcomeVo = audio.playVoiceEnded('welcome');   // 🔊 "Welcome to the Energy Farm!"
     await this.ui.showWelcome();                 // big playful "Welcome to the Energy Farm!" title
+    await welcomeVo;                             // hold the title until the line finishes
     // auto cloud-wipe from the welcome title into the pod-intro screen — under the cloud cover we
     // clear the welcome and spawn the intro pods, so they're revealed as the clouds part.
     await this.ui.fieldTransition('', () => {
@@ -1851,21 +1961,24 @@ class GameManager {
     this.tutorialStep = 'energy-stored';
     await sleep(300);                            // beat after the prior bubble fades
     left.el.classList.add('glow'); right.el.classList.add('glow');   // both pods pulse
+    const cellsVo = audio.playVoiceEnded('energyCells');   // 🔊 "Energy cells are stored in these pods."
     this.ui.showHint('Energy cells are stored in these pods.');
-    await sleep(650);                            // let the panel + text settle before a tap counts
-    await this.ui.waitForTap();
+    await cellsVo;                               // auto-advance when the line finishes…
+    await sleep(VO_GAP);                         // …plus a gentle pause (no tap needed)
 
     // Scene 5 → "Help Byte collect the cells and power up!" (mission line, pods stop pulsing).
     this.tutorialStep = 'help-collect';
     left.el.classList.remove('glow'); right.el.classList.remove('glow');
+    const helpVo = audio.playVoiceEnded('helpByte');        // 🔊 "Help Byte collect the cells and power up!"
     this.ui.showHint('Help Byte collect the cells and power up!');
-    await sleep(650);
-    await this.ui.waitForTap();
+    await helpVo;
+    await sleep(VO_GAP);
     this.ui.hideHint();
     this.tutorialStep = null;
 
     // Scene 6 → screen transition into the game (curtain wipe; the intro pods are cleared under
     // it so beginLevel spawns the level fresh as the curtain lifts).
+    audio.playVoice('nearAndFar');               // 🔊 "Near and Far" — the lesson title
     await this.ui.fieldTransition('', () => {
       this.ui.hideHint();
       this.pods.forEach(p => p.destroy()); this.pods = [];
@@ -1923,7 +2036,7 @@ class GameManager {
   }
 
   async beginLevel(){
-    const cfg = this.levels[this.level];
+    const cfg = this._cfg(this.level);
     this._wrongThisLevel = false;            // tracks a wrong attempt on THIS level (reset per level)
     this.setField(this.level);
     this._resolvePathX();                    // pathway column for this background
@@ -1932,8 +2045,16 @@ class GameManager {
     if (cfg.puzzle) this._instructionType = Math.random() < 0.5 ? 'near' : 'far';
     this.spawnPods(cfg, true);               // pods placed left/right of the pathway
     this.ui.moveTile(cfg.byteTop);
+    // 🔊 hint 1 — only the "near" variant exists in the VO pack; "far" shows text-only.
+    const cellVo = this._instructionType === 'near' ? audio.playVoiceEnded('cellNear') : null;
     this.ui.showHint(this._levelCellText());  // 1) "The pod near/far Byte has a cell."
+    // The battery HUD pops in just after the first PUZZLE round's question panel (not the
+    // tutorial's) and stays pinned to the top-left corner for the rest of the game.
+    if (cfg.puzzle) this.ui.showBattery();
     await this.byte.scan();                   // Byte looks left & right while that line shows
+    await cellVo;                             // never talk over hint 1 — wait for the line to end…
+    await sleep(VO_GAP);                      // …plus a breathing gap before the tap prompt
+    audio.playVoice(this._instructionType === 'near' ? 'tapNear' : 'tapFar');  // 🔊 hint 2
     this.ui.showHint(this._levelTapText());   // 2) "Tap on the pod near/far Byte."
     this.pods.forEach(p => p.enableTap(pod => this.handlePodTap(pod)));
     this.canTap = true;
@@ -1961,7 +2082,7 @@ class GameManager {
     const tiles = Math.max(0, Math.round(dist / COL_STEP) - 1);   // grass cells BETWEEN Byte & pod
     if (tiles > 0) this.ui.showPathTiles(this._pathX, pod.side, tiles);
     await sleep(tiles > 0 ? 500 : 120);                           // tiles glow in
-    await this.ui.showDialogue(pod.el, step);                     // close/away bubble + wait for tap
+    await this.ui.showDialogue(pod.el, step);                     // close/away bubble (auto-advances)
     this.ui.hidePathTiles();
   }
 
@@ -1989,7 +2110,7 @@ class GameManager {
 
     // the energy cell rises out of the open pod, GROWING as it emerges
     const coin = document.createElement('img');
-    coin.className = 'coin'; coin.src = 'assets/Energy.svg'; coin.draggable = false;
+    coin.className = 'coin'; coin.src = 'assets/Energy.webp'; coin.draggable = false;
     coin.style.left = podC.x + 'px'; coin.style.top = openY + 'px';
     coin.style.opacity = '0';
     coin.style.transform = 'translate(-50%,-50%) translateY(34%) scale(.14)';  // small, in the mouth
@@ -2004,34 +2125,53 @@ class GameManager {
     await sleep(880);                            // let it rise, grow, and hover
 
     await this.byte.retractArm();
-    // ...then floats to Byte (stays large)
-    const byteC = centerOf(this.byte.el);
-    coin.style.transition = 'transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease';
-    coin.style.transform =
-      `translate(-50%,-50%) translate(${byteC.x - podC.x}px, ${byteC.y - openY}px) scale(1.32)`;
-    await sleep(720);
+    if (this._cfg(this.level).puzzle){
+      // ...then the cell flies INTO THE BATTERY (top-left HUD), shrinking on the way, and the
+      // next slot lights up the moment it lands (fills backwards — rightmost empty slot first).
+      const slot  = this.ui.batterySlots[Math.max(0, this.ui.batterySlots.length - 1 - this.cells)];
+      const slotC = centerOf(slot);
+      coin.style.transition = 'transform .8s cubic-bezier(.45,.05,.35,1), opacity .3s ease';
+      coin.style.transform =
+        `translate(-50%,-50%) translate(${slotC.x - podC.x}px, ${slotC.y - openY}px) scale(.4)`;
+      await sleep(800);
+      playSound('coin');
+      this.cells++;
+      this.ui.setBatterySlots(this.cells);           // slot pops as the cell is absorbed
+      this.particles.emit('charge', slotC.x, slotC.y, 12);
+      coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
+      setTimeout(() => coin.remove(), 320);
+      this.byte.cheer();
+      await sleep(700);
+      this.byte.faceForward();
+    } else {
+      // Tutorial (practice) cell: no battery yet — it floats to Byte and charges HIM.
+      const byteC = centerOf(this.byte.el);
+      coin.style.transition = 'transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease';
+      coin.style.transform =
+        `translate(-50%,-50%) translate(${byteC.x - podC.x}px, ${byteC.y - openY}px) scale(1.32)`;
+      await sleep(720);
+      playSound('charge');
+      this.byte.startCharge();
+      this.particles.emit('charge', byteC.x, byteC.y, 20);
+      coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
+      setTimeout(() => coin.remove(), 320);
+      this.byte.cheer();
+      await sleep(700);
+      this.byte.stopCharge(); this.byte.faceForward();
+    }
 
-    playSound('charge');
-    this.byte.startCharge();
-    this.particles.emit('charge', byteC.x, byteC.y, 20);
-    coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
-    setTimeout(() => coin.remove(), 320);
+    // Reinforce the near/far distance on a clean (first-try) correct — but only in the
+    // 'guided' tier; later tiers reduce support, and after a wrong attempt the user has
+    // just seen the teaching anyway.
+    if (!this._wrongThisLevel && this._tier() === 'guided') await this.showDistanceTeaching();
 
-    this.byte.cheer();
-    await sleep(700);
-    this.byte.stopCharge(); this.byte.faceForward();
-
-    // Reinforce the near/far distance — but ONLY on a clean (first-try) correct. If the user
-    // already answered wrong on this level, they just saw the teaching, so don't repeat it.
-    if (!this._wrongThisLevel) await this.showDistanceTeaching();
-
-    this.level++;
-    if (this.level >= this.levels.length) await this.win();
-    else await this.advanceLevel();
+    if (this.cells >= this.ui.batterySlots.length) await this.win();   // battery full → done!
+    else { this.level++; await this.advanceLevel(); }
     this.busy = false;
   }
 
   async wrongSequence(pod){
+    const missedBefore = this._wrongThisLevel;   // true → this is already the SECOND miss this round
     this._wrongThisLevel = true;                 // remember it: skip the teaching on a later correct
     pod.open();                                  // lid pops + flies off the top
     await sleep(460);                            // let the cap clear before the bunny appears
@@ -2042,10 +2182,26 @@ class GameManager {
     this.byte.faceForward();
     pod.reset();
     await sleep(260);
-    await this.showDistanceTeaching();         // show where the cell is + the distance
-    this.ui.showHint(this._levelTapText());     // re-show the "Tap on…" instruction for the retry
-    this.pods.forEach(p => p.enableTap(pp => this.handlePodTap(pp)));
-    this.canTap = true; this.busy = false;
+
+    const tier = this._tier();
+    const isTutorial = !this._cfg(this.level).puzzle;
+    // GUIDED (tutorial + iterations 1-4): reinforced teaching, then ONE more chance to earn
+    // the cell (the tutorial retries until correct — it's the learning level).
+    if (tier === 'guided' && (isTutorial || !missedBefore)){
+      await this.showDistanceTeaching();          // reinforced explanation
+      audio.playVoice(this._instructionType === 'near' ? 'tapNear' : 'tapFar');  // 🔊 retry prompt
+      this.ui.showHint(this._levelTapText());     // re-show the "Tap on…" instruction for the retry
+      this.pods.forEach(p => p.enableTap(pp => this.handlePodTap(pp)));
+      this.canTap = true; this.busy = false;
+      return;
+    }
+    // No chances left — the cell is NOT earned this round. REDUCED (iterations 5-8) still
+    // explains the concept before moving on; GUIDED already taught after the first miss;
+    // INDEPENDENT (9+) moves straight on with no explanation.
+    if (tier === 'reduced') await this.showDistanceTeaching();
+    this.level++;
+    await this.advanceLevel();
+    this.busy = false;
   }
 
   async advanceLevel(){
@@ -2061,7 +2217,7 @@ class GameManager {
 
     // swap the farm background UNDER the curtain so the change is a smooth fade
     await this.ui.fieldTransition('', () => this.setField(this.level));
-    const cfg = this.levels[this.level];
+    const cfg = this._cfg(this.level);
     // resolve the NEW farm's pathway and stand Byte on it BEFORE walking up from the bottom
     this._resolvePathX();
     this._placeByteColumn(this._pathX);
@@ -2084,14 +2240,17 @@ class GameManager {
     $('#win').classList.remove('show');
     this.pods.forEach(p => p.destroy()); this.pods = [];
     this.level = 0; this.busy = false; this.canTap = false;
+    this.cells = 0;
+    this.ui.setBatterySlots(0);
+    this.ui.hideBattery();
     this.ui.hideHint();
     this.start();
   }
 
-  /** DEBUG: jump straight onto a level (0 = tutorial level, 1-8 = puzzle levels). Tears down any
-      in-flight state/overlays, drops Byte on that level's pathway, and runs beginLevel(). */
+  /** DEBUG: jump straight onto a level (0 = tutorial, 1+ = puzzle iterations; 9+ tests the
+      'independent' tier). Tears down in-flight state/overlays and runs beginLevel(). */
   async jumpToLevel(idx){
-    idx = clamp(idx|0, 0, this.levels.length - 1);
+    idx = clamp(idx|0, 0, 99);
     // tear down whatever's on screen
     $('#win').classList.remove('show');
     this.ui.welcome.classList.remove('show');
@@ -2103,11 +2262,12 @@ class GameManager {
     if (this.byte.stretch){ this.byte.stretch.remove(); this.byte.stretch = null; }
     this.byte.stopCharge(); this.byte.faceForward();
     audio.stopMove();
+    audio.stopVoice();                                        // cut any in-flight narration
     this.busy = false; this.canTap = false;
     this.tutorialStep = null;
     // place Byte on the target level and start it
     this.level = idx;
-    const cfg = this.levels[idx];
+    const cfg = this._cfg(idx);
     this.setField(idx);
     this._resolvePathX();
     this._placeByteColumn(this._pathX);
@@ -2165,6 +2325,7 @@ window.addEventListener('load', () => {
     audio.resume();
     audio.startTheme();                 // looping background theme (starts once, never overlaps)
     audio.play('coin');                 // tiny confirmation blip
+    audio.playVoice('title');           // 🔊 "Byte's Energy Hunt" — game title announcement
     startScreen.classList.add('hide');
     game.start();
   };
