@@ -538,22 +538,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   transition:opacity .5s ease;}
 #startScreen.hide{opacity:0;pointer-events:none;}
 /* Glossy green 3D PLAY button (bottom-right), matching the splash art style */
-#startScreen .play-btn{position:absolute;
-  right:calc(9% + env(safe-area-inset-right,0px));bottom:calc(9% + env(safe-area-inset-bottom,0px));
-  display:flex;align-items:center;justify-content:center;gap:.38em;
-  font-family:inherit;font-weight:900;font-size:clamp(20px,5vw,40px);letter-spacing:.05em;
-  color:#fff;text-shadow:0 2px 0 rgba(20,80,10,.5),0 4px 7px rgba(0,0,0,.3);
-  padding:.4em 1.7em .46em;border-radius:999px;cursor:pointer;
-  border:4px solid #f0fff2;
-  background:linear-gradient(#a6ec53,#6cc028 55%,#54a31d);
-  box-shadow:0 9px 0 #357c14, 0 14px 20px rgba(0,0,0,.32),
-             inset 0 4px 5px rgba(255,255,255,.6), inset 0 -6px 9px rgba(20,70,0,.28);
+/* PLAY = the round glossy play-button art, sitting just below the "HUNT" title text
+   (the title lives at ~67% across, bottom edge ~69% down the start art). */
+#startScreen .play-btn{position:absolute;left:67%;top:72%;
+  width:clamp(80px,18vh,160px);
+  padding:0;border:0;background:none;cursor:pointer;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));
   animation:playPulse 1.3s ease-in-out infinite;
-  transition:transform .08s ease, box-shadow .08s ease;}
-#startScreen .play-btn:active{animation:none;transform:translateY(5px);
-  box-shadow:0 3px 0 #357c14, 0 6px 10px rgba(0,0,0,.32),
-             inset 0 4px 5px rgba(255,255,255,.55), inset 0 -6px 9px rgba(20,70,0,.28);}
-@keyframes playPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  transition:transform .08s ease, filter .08s ease;}
+#startScreen .play-btn img{display:block;width:100%;height:auto;pointer-events:none;}
+#startScreen .play-btn:active{animation:none;transform:translateX(-50%) translateY(4px) scale(.96);
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));}
+@keyframes playPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.05)}}
 
 /* ---------- Rotate-to-landscape overlay (portrait orientation) ----------
    Covers EVERYTHING (z above the start gate + win screen) and is pointer-events:auto, so it
@@ -751,7 +748,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 
   <!-- Start gate (also unlocks audio on first tap) -->
   <div id="startScreen">
-    <button class="play-btn" type="button" aria-label="Play">PLAY</button>
+    <button class="play-btn" type="button" aria-label="Play"><img src="assets/play-button.webp" alt="" draggable="false" /></button>
   </div>
 
   <!-- Win — PostLBD celebration splash -->
@@ -1970,7 +1967,7 @@ class GameManager {
     this.tutorialStep = 'help-collect';
     left.el.classList.remove('glow'); right.el.classList.remove('glow');
     const helpVo = audio.playVoiceEnded('helpByte');        // 🔊 "Help Byte collect the cells and power up!"
-    this.ui.showHint('Help Byte collect the cells and power up!');
+    this.ui.showHint('Help Byte collect the energy cells');
     await helpVo;
     await sleep(VO_GAP);
     this.ui.hideHint();
@@ -2048,9 +2045,8 @@ class GameManager {
     // 🔊 hint 1 — only the "near" variant exists in the VO pack; "far" shows text-only.
     const cellVo = this._instructionType === 'near' ? audio.playVoiceEnded('cellNear') : null;
     this.ui.showHint(this._levelCellText());  // 1) "The pod near/far Byte has a cell."
-    // The battery HUD pops in just after the first PUZZLE round's question panel (not the
-    // tutorial's) and stays pinned to the top-left corner for the rest of the game.
-    if (cfg.puzzle) this.ui.showBattery();
+    // (The battery HUD is NOT pinned here — it only pops in for a moment each time a
+    // cell is consumed, inside correctSequence, then slides away again.)
     await this.byte.scan();                   // Byte looks left & right while that line shows
     await cellVo;                             // never talk over hint 1 — wait for the line to end…
     await sleep(VO_GAP);                      // …plus a breathing gap before the tap prompt
@@ -2126,23 +2122,30 @@ class GameManager {
 
     await this.byte.retractArm();
     if (this._cfg(this.level).puzzle){
-      // ...then the cell flies INTO THE BATTERY (top-left HUD), shrinking on the way, and the
-      // next slot lights up the moment it lands (fills backwards — rightmost empty slot first).
-      const slot  = this.ui.batterySlots[Math.max(0, this.ui.batterySlots.length - 1 - this.cells)];
-      const slotC = centerOf(slot);
-      coin.style.transition = 'transform .8s cubic-bezier(.45,.05,.35,1), opacity .3s ease';
+      // ...the cell floats to Byte and charges HIM (same as the tutorial)...
+      const byteC = centerOf(this.byte.el);
+      coin.style.transition = 'transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease';
       coin.style.transform =
-        `translate(-50%,-50%) translate(${slotC.x - podC.x}px, ${slotC.y - openY}px) scale(.4)`;
-      await sleep(800);
-      playSound('coin');
-      this.cells++;
-      this.ui.setBatterySlots(this.cells);           // slot pops as the cell is absorbed
-      this.particles.emit('charge', slotC.x, slotC.y, 12);
+        `translate(-50%,-50%) translate(${byteC.x - podC.x}px, ${byteC.y - openY}px) scale(1.32)`;
+      await sleep(720);
+      playSound('charge');
+      this.byte.startCharge();
+      this.particles.emit('charge', byteC.x, byteC.y, 20);
       coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
       setTimeout(() => coin.remove(), 320);
+      // ...THEN the battery pops in just to record it: the next slot lights up (fills
+      // backwards — rightmost empty slot first) and the HUD slides away again.
+      this.cells++;
+      this.ui.showBattery();
+      await sleep(450);                              // let the HUD's pop-in transition finish (.4s)
+      playSound('coin');
+      this.ui.setBatterySlots(this.cells);           // newly earned slot pops as it fills
+      const slotC = centerOf(this.ui.batterySlots[this.ui.batterySlots.length - this.cells]);
+      this.particles.emit('charge', slotC.x, slotC.y, 12);
       this.byte.cheer();
-      await sleep(700);
-      this.byte.faceForward();
+      await sleep(1000);                             // hold the filled battery on screen for a beat
+      this.ui.hideBattery();
+      this.byte.stopCharge(); this.byte.faceForward();
     } else {
       // Tutorial (practice) cell: no battery yet — it floats to Byte and charges HIM.
       const byteC = centerOf(this.byte.el);
