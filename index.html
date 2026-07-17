@@ -1967,7 +1967,7 @@ class GameManager {
     this.tutorialStep = 'help-collect';
     left.el.classList.remove('glow'); right.el.classList.remove('glow');
     const helpVo = audio.playVoiceEnded('helpByte');        // 🔊 "Help Byte collect the cells and power up!"
-    this.ui.showHint('Help Byte collect the energy cells');
+    this.ui.showHint('Help Byte collect the cells and power up!');
     await helpVo;
     await sleep(VO_GAP);
     this.ui.hideHint();
