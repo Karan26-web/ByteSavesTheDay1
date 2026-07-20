@@ -355,12 +355,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* ============================================================
    6) UI  (screen-fixed)
    ============================================================ */
-/* 8-slot ENERGY COUNTER (top-left): silver capsule, round teal badge with the Energy bolt,
+/* 8-slot ENERGY COUNTER (top-left of the board): silver capsule, round teal badge with the Energy bolt,
    and 8 glossy slots in a recessed track. Slots sit grey until their Energy Cell is earned,
    then light up along the green → yellow → orange → red → sparkling-cyan finale sequence.
-   One slot per Energy Cell; the game is complete at 8/8. */
-#battery{position:absolute;top:clamp(16px,4vh,30px);left:clamp(12px,3vw,24px);
-  display:flex;align-items:center;
+   One slot per Energy Cell; the game is complete at 8/8. Shown for the WHOLE puzzle phase
+   (pinned from the first puzzle level until the win screen), not popped in per cell. */
+/* Pinned to the TOP-LEFT corner of the 16:9 board (not the viewport): the board is letterboxed
+   inside the stage, so each offset = that side's letterbox bar size + a small inset. This keeps
+   the HUD on the game art (never in the bars / off-screen) at every aspect ratio. */
+#battery{position:absolute;
+  top:calc((var(--app-h,100vh) - min(var(--app-h,100vh), calc(var(--app-w,100vw) * 9 / 16))) / 2
+      + clamp(12px,2.4vh,26px));
+  left:calc((var(--app-w,100vw) - min(var(--app-w,100vw), calc(var(--app-h,100vh) * 16 / 9))) / 2
+      + clamp(12px,2vw,26px));
+  display:flex;align-items:center;max-width:calc(100% - 16px);
   background:linear-gradient(180deg,#f4f6f8,#c9cfd6 45%,#aeb6bf);
   border-radius:999px;padding:clamp(4px,.9vw,6px) clamp(10px,2vw,14px) clamp(4px,.9vw,6px) 4px;
   box-shadow:0 6px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 3px rgba(0,0,0,.18);
@@ -376,7 +384,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   background:radial-gradient(circle at 35% 30%,#54d6c6,#1e9e93 72%);
   border:clamp(4px,.9vw,5px) solid #e3e8ed;
   box-shadow:0 4px 10px rgba(0,0,0,.35), inset 0 3px 6px rgba(255,255,255,.35), inset 0 -3px 6px rgba(0,0,0,.25);}
-#battery .badge img{width:84%;height:90%;object-fit:contain;transform:translateY(5%);
+/* Energy.webp carries uneven transparent padding (10px above the bolt, 79px below in the
+   278×514 frame), putting the visible bolt's centre at 43.2% of the frame — so shift the img
+   down by the missing 6.8% to optically centre the bolt in the round badge. */
+#battery .badge img{width:84%;height:90%;object-fit:contain;transform:translateY(13.5%);
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));}
 /* recessed track holding the 8 slots */
 #battery .case{display:flex;gap:clamp(3px,.7vw,5px);padding:clamp(3px,.7vw,5px);
@@ -2042,11 +2053,12 @@ class GameManager {
     if (cfg.puzzle) this._instructionType = Math.random() < 0.5 ? 'near' : 'far';
     this.spawnPods(cfg, true);               // pods placed left/right of the pathway
     this.ui.moveTile(cfg.byteTop);
+    // Pin the battery HUD for the whole puzzle phase (hidden during the tutorial) so kids
+    // can always see their progress; slots light up in correctSequence as cells are earned.
+    if (cfg.puzzle) this.ui.showBattery();
     // 🔊 hint 1 — only the "near" variant exists in the VO pack; "far" shows text-only.
     const cellVo = this._instructionType === 'near' ? audio.playVoiceEnded('cellNear') : null;
     this.ui.showHint(this._levelCellText());  // 1) "The pod near/far Byte has a cell."
-    // (The battery HUD is NOT pinned here — it only pops in for a moment each time a
-    // cell is consumed, inside correctSequence, then slides away again.)
     await this.byte.scan();                   // Byte looks left & right while that line shows
     await cellVo;                             // never talk over hint 1 — wait for the line to end…
     await sleep(VO_GAP);                      // …plus a breathing gap before the tap prompt
@@ -2133,18 +2145,16 @@ class GameManager {
       this.particles.emit('charge', byteC.x, byteC.y, 20);
       coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
       setTimeout(() => coin.remove(), 320);
-      // ...THEN the battery pops in just to record it: the next slot lights up (fills
-      // backwards — rightmost empty slot first) and the HUD slides away again.
+      // ...THEN the pinned battery records it: the next slot lights up (fills backwards —
+      // rightmost empty slot first). The HUD stays on screen for the whole puzzle phase.
       this.cells++;
-      this.ui.showBattery();
-      await sleep(450);                              // let the HUD's pop-in transition finish (.4s)
+      await sleep(450);                              // beat between Byte charging and the slot filling
       playSound('coin');
       this.ui.setBatterySlots(this.cells);           // newly earned slot pops as it fills
       const slotC = centerOf(this.ui.batterySlots[this.ui.batterySlots.length - this.cells]);
       this.particles.emit('charge', slotC.x, slotC.y, 12);
       this.byte.cheer();
-      await sleep(1000);                             // hold the filled battery on screen for a beat
-      this.ui.hideBattery();
+      await sleep(1000);                             // hold the moment for a beat
       this.byte.stopCharge(); this.byte.faceForward();
     } else {
       // Tutorial (practice) cell: no battery yet — it floats to Byte and charges HIM.
@@ -2271,6 +2281,7 @@ class GameManager {
     // place Byte on the target level and start it
     this.level = idx;
     const cfg = this._cfg(idx);
+    if (!cfg.puzzle) this.ui.hideBattery();   // tutorial has no HUD; puzzle levels pin it in beginLevel
     this.setField(idx);
     this._resolvePathX();
     this._placeByteColumn(this._pathX);
