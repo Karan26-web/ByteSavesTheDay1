@@ -611,11 +611,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   background:linear-gradient(#5ed0f5,#2299d6 55%,#1577b3);
   box-shadow:0 9px 0 #0f5a86, 0 14px 20px rgba(0,0,0,.32),
              inset 0 4px 5px rgba(255,255,255,.6), inset 0 -6px 9px rgba(0,40,70,.28);
-  animation:playPulse 1.3s ease-in-out infinite;
+  animation:winPulse 1.3s ease-in-out infinite;
   transition:transform .1s ease, box-shadow .1s ease;}
 #win button:active{animation:none;transform:translateY(5px);
   box-shadow:0 3px 0 #0f5a86, 0 6px 10px rgba(0,0,0,.32),
              inset 0 4px 5px rgba(255,255,255,.55), inset 0 -6px 9px rgba(0,40,70,.28);}
+/* The win button is anchored bottom-RIGHT (no translateX), so it needs its own pulse — reusing
+   the Play button's playPulse (which carries translateX(-50%) for the CENTRED play art) shifted
+   this button left and made it snap away on :active, so taps missed it. Scale only, in place. */
+@keyframes winPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 </style>
 </head>
 <body>
@@ -993,7 +997,7 @@ class AudioManager {
     // File-based audio (works without the synth AudioContext): looping theme + one-shot SFX.
     if (!this.theme){
       this.theme = new Audio('audios/themeMusic.ogg');
-      this.theme.loop = true; this.theme.volume = 0.4; this.theme.preload = 'auto';
+      this.theme.loop = true; this.theme.volume = 0.14; this.theme.preload = 'auto';  // soft BGM bed — stays well under the voice-over (1.0) and SFX
       // One-shot file SFX → [filename, volume]. Keys are referenced via audio.playFile(key).
       const FILE_SFX = {
         jump:       ['cartoon-jump-6462.ogg',        0.85],   // energy cell pops out
@@ -1002,6 +1006,7 @@ class AudioManager {
         headRotate: ['ByteHeadRotationSound.ogg',    0.7 ],   // Byte turns his head left / right
         tileAnim:   ['TutorialTileAnimationSound.ogg',0.7 ],  // near/far tutorial tiles glow in
         capThrow:   ['CapSound.ogg',                 0.9 ],   // pod lid pops + flies off the screen
+        confetti:   ['LBD 1/confettiSound.ogg',      0.9 ],   // celebratory popper on the win screen
       };
       for (const [k, [f, v]] of Object.entries(FILE_SFX)){
         this.files[k] = new Audio('audios/' + f);
@@ -2246,6 +2251,7 @@ class GameManager {
     this.ui.hideInstruction();
     playSound('win');
     $('#win').classList.add('show');   // reveal the PostLBD celebration splash
+    audio.playFile('confetti');        // 🔊 celebratory popper, fired with the confetti
     this.particles.confetti();         // 5s two-sided fireworks (canvas-confetti)
   }
 
