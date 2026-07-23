@@ -45,8 +45,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
    clipped. They fall back to dvh/vh units (then vw/vh) for the first paint and no-JS case. */
 /* background here is the LETTERBOX fill — the solid color shown in the bars when the window
    isn't 16:9 and the contained board doesn't reach an edge. Soft sky tone to blend with the art. */
+/* max(…) guards against a transient too-small --app value (e.g. mid-zoom) ever shrinking the
+   stage below the window and exposing the page behind it. 100dvh (not vh) keeps the mobile
+   address-bar fit, so on mobile the max is a no-op (--app-h ≈ dvh). */
 #stage{position:fixed;inset:0;overflow:hidden;background:#d8e7f5;
-  width:var(--app-w,100vw);height:var(--app-h,100dvh);}
+  width:max(var(--app-w,100vw),100vw);height:max(var(--app-h,100dvh),100dvh);}
 @supports not (height:100dvh){#stage{height:var(--app-h,100vh);}}
 /* Top/bottom vignette that frames the playfield. Scoped to #board (not #stage) so it scales
    WITH the contained 16:9 scene and never tints the letterbox bars — keeping the bars a clean
@@ -373,9 +376,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   border-radius:999px;padding:clamp(4px,.9vw,6px) clamp(10px,2vw,14px) clamp(4px,.9vw,6px) 4px;
   box-shadow:0 6px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 3px rgba(0,0,0,.18);
   pointer-events:none;
-  opacity:0;transform:translateY(-14px);
+  /* --bat-scale keeps the HUD at FULL size on large displays (unchanged look) and shrinks it only
+     on smaller screens — see the media queries below — where it would otherwise read too large next
+     to the scene. transform-origin at the top-left corner keeps it pinned to the board corner as it
+     scales; the entrance animation only changes translateY, so the scale stays constant (no wobble). */
+  transform-origin:0 0;
+  opacity:0;transform:translateY(-14px) scale(var(--bat-scale,1));
   transition:opacity .4s ease, transform .4s cubic-bezier(.34,1.4,.5,1);}
-#battery.show{opacity:1;transform:translateY(0);}
+#battery.show{opacity:1;transform:translateY(0) scale(var(--bat-scale,1));}
+/* Full size (scale 1) on large displays; step down on smaller screens only. */
+@media (max-width:1366px){ :root{ --bat-scale:.82; } }
+@media (max-width:1000px){ :root{ --bat-scale:.72; } }
 /* round energy badge on the left — silver ring, teal face, the Energy bolt art */
 #battery .badge{position:relative;z-index:1;flex:none;display:flex;align-items:center;justify-content:center;
   width:clamp(44px,10vw,60px);height:clamp(44px,10vw,60px);
@@ -432,8 +443,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
 /* ── Instruction panel: the InstructionPanel.webp banner (cream, soft green border) with the
    instruction text centred on it. The panel pops in, then the text fades up — with the near/far
    keyword in red so it stands out. ── */
-#instrPanel{position:absolute;left:50%;top:clamp(0px,1vh,14px);transform:translateX(-50%);
-  width:clamp(300px,58vw,660px);max-width:92vw;pointer-events:none;
+/* top is anchored to the BOARD's top edge (letterbox bar + small inset) — same formula the
+   battery uses — so on a tall/letterboxed window the panel stays inside the play area instead
+   of floating up into the sky bar above the board. */
+#instrPanel{position:absolute;left:50%;transform:translateX(-50%);
+  top:calc((var(--app-h,100vh) - min(var(--app-h,100vh), calc(var(--app-w,100vw) * 9 / 16))) / 2
+      + clamp(4px,1vh,14px));
+  /* Full 660px on large displays (unchanged from the original design); on smaller screens the
+     calc(100vw - 700px) term takes over and pins the panel's LEFT edge at ~350px — clear of the
+     top-left battery HUD — so it only shrinks where it would otherwise clash, never on big screens. */
+  width:clamp(230px,calc(100vw - 700px),660px);max-width:92vw;pointer-events:none;
   opacity:0;visibility:hidden;transition:opacity .25s ease, visibility .25s;}
 #instrPanel.show{opacity:1;visibility:visible;}
 /* the panel art (946×154) — pops in with a gentle scale */
@@ -446,7 +465,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
    width so it wraps normally to 1–2 lines and stays within the banner. */
 #instrPanel .ip-text{position:absolute;top:54%;left:50%;transform:translate(-50%,-50%);
   width:88%;text-align:center;color:#1B334E;font-weight:600;
-  font-size:clamp(17px,3.7vw,28px);line-height:1.22;
+  /* font scales WITH the panel width so the longest hint always wraps to ≤2 lines inside the
+     banner art — ~4.24% of the panel width (the original 28/660 ratio), clamped for readability.
+     Restores the original 28px on large screens; only shrinks where the panel itself shrinks. */
+  font-size:clamp(14px,calc((100vw - 700px) * .0424),28px);line-height:1.22;
   opacity:0;transition:opacity .42s ease;}
 #instrPanel.text-in .ip-text{opacity:1;}
 #instrPanel .ip-text .kw{color:#6A70E3;}   /* highlighted keyword (near / far) */
@@ -2058,9 +2080,9 @@ class GameManager {
     if (cfg.puzzle) this._instructionType = Math.random() < 0.5 ? 'near' : 'far';
     this.spawnPods(cfg, true);               // pods placed left/right of the pathway
     this.ui.moveTile(cfg.byteTop);
-    // Pin the battery HUD for the whole puzzle phase (hidden during the tutorial) so kids
-    // can always see their progress; slots light up in correctSequence as cells are earned.
-    if (cfg.puzzle) this.ui.showBattery();
+    // Pin the battery HUD for the WHOLE game — tutorial included — so kids always see their
+    // progress; slots light up in correctSequence as cells are earned (8 cells = full = win).
+    this.ui.showBattery();
     // 🔊 hint 1 — only the "near" variant exists in the VO pack; "far" shows text-only.
     const cellVo = this._instructionType === 'near' ? audio.playVoiceEnded('cellNear') : null;
     this.ui.showHint(this._levelCellText());  // 1) "The pod near/far Byte has a cell."
@@ -2138,8 +2160,9 @@ class GameManager {
     await sleep(880);                            // let it rise, grow, and hover
 
     await this.byte.retractArm();
-    if (this._cfg(this.level).puzzle){
-      // ...the cell floats to Byte and charges HIM (same as the tutorial)...
+    // The cell floats to Byte and charges HIM — same for the tutorial AND the puzzle levels,
+    // so every collected cell is recorded on the battery (energy consumed into the pack).
+    {
       const byteC = centerOf(this.byte.el);
       coin.style.transition = 'transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease';
       coin.style.transform =
@@ -2151,7 +2174,7 @@ class GameManager {
       coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
       setTimeout(() => coin.remove(), 320);
       // ...THEN the pinned battery records it: the next slot lights up (fills backwards —
-      // rightmost empty slot first). The HUD stays on screen for the whole puzzle phase.
+      // rightmost empty slot first). The HUD stays on screen for the whole game.
       this.cells++;
       await sleep(450);                              // beat between Byte charging and the slot filling
       playSound('coin');
@@ -2160,21 +2183,6 @@ class GameManager {
       this.particles.emit('charge', slotC.x, slotC.y, 12);
       this.byte.cheer();
       await sleep(1000);                             // hold the moment for a beat
-      this.byte.stopCharge(); this.byte.faceForward();
-    } else {
-      // Tutorial (practice) cell: no battery yet — it floats to Byte and charges HIM.
-      const byteC = centerOf(this.byte.el);
-      coin.style.transition = 'transform .72s cubic-bezier(.5,.05,.4,1), opacity .3s ease';
-      coin.style.transform =
-        `translate(-50%,-50%) translate(${byteC.x - podC.x}px, ${byteC.y - openY}px) scale(1.32)`;
-      await sleep(720);
-      playSound('charge');
-      this.byte.startCharge();
-      this.particles.emit('charge', byteC.x, byteC.y, 20);
-      coin.style.opacity = '0'; coin.style.transform += ' scale(.2)';
-      setTimeout(() => coin.remove(), 320);
-      this.byte.cheer();
-      await sleep(700);
       this.byte.stopCharge(); this.byte.faceForward();
     }
 
@@ -2287,7 +2295,6 @@ class GameManager {
     // place Byte on the target level and start it
     this.level = idx;
     const cfg = this._cfg(idx);
-    if (!cfg.puzzle) this.ui.hideBattery();   // tutorial has no HUD; puzzle levels pin it in beginLevel
     this.setField(idx);
     this._resolvePathX();
     this._placeByteColumn(this._pathX);
@@ -2326,8 +2333,13 @@ window.addEventListener('load', () => {
   // (when present) reports the live, post-bar size; we fall back to innerWidth/Height.
   const syncViewport = () => {
     const vv = window.visualViewport;
-    const w = (vv && vv.width)  || window.innerWidth;
-    const h = (vv && vv.height) || window.innerHeight;
+    // While the user is PINCH-zoomed (scale ≠ 1 — e.g. a trackpad pinch on desktop), visualViewport
+    // reports the zoomed-in SUB-REGION, not the whole window. Using that would shrink #stage and
+    // expose the page behind it ("the screen separates"). So when pinched, fall back to the layout
+    // viewport (innerWidth/Height) — the browser handles the magnification itself, stage stays full.
+    const pinched = vv && Math.abs(vv.scale - 1) > 0.01;
+    const w = (vv && !pinched && vv.width)  || window.innerWidth;
+    const h = (vv && !pinched && vv.height) || window.innerHeight;
     const r = document.documentElement.style;
     r.setProperty('--app-w', w + 'px');
     r.setProperty('--app-h', h + 'px');
