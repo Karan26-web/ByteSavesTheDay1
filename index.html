@@ -642,6 +642,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
    the Play button's playPulse (which carries translateX(-50%) for the CENTRED play art) shifted
    this button left and made it snap away on :active, so taps missed it. Scale only, in place. */
 @keyframes winPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+/* ============================================================
+   8) DEBUG SCREEN-SWITCHER  (dormant until you press D, or open with ?debug=1)
+   Sits above every overlay (win = 90, rotate gate = higher) so screens can be
+   switched from anywhere — including on top of the win splash itself.
+   ============================================================ */
+#debugBar{position:absolute;top:8px;left:8px;z-index:999;display:none;
+  gap:6px;flex-wrap:wrap;align-items:center;max-width:70%;
+  padding:8px 10px;border-radius:12px;background:rgba(10,25,40,.85);
+  box-shadow:0 4px 14px rgba(0,0,0,.35);}
+#debugBar.show{display:flex;}
+#debugBar .dbg-title{color:#8fe3ff;font-weight:900;font-size:12px;letter-spacing:.08em;margin-right:2px;}
+#debugBar button{font:inherit;font-weight:800;font-size:13px;color:#fff;cursor:pointer;
+  padding:.3em .7em;border-radius:8px;border:1px solid rgba(255,255,255,.25);
+  background:linear-gradient(#3aa7dd,#1577b3);}
+#debugBar button:hover{filter:brightness(1.15);}
+#debugBar button.warn{background:linear-gradient(#f6a53a,#d97711);}
 </style>
 </head>
 <body>
@@ -797,6 +814,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0d1b12;
   <div id="rotateOverlay" aria-hidden="true">
     <div class="rotate-phone"></div>
     <div class="rotate-text">Please rotate your device 🔄</div>
+  </div>
+
+  <!-- Debug screen-switcher — press D to toggle, or open with ?debug=1 -->
+  <div id="debugBar" aria-hidden="true">
+    <span class="dbg-title">JUMP:</span>
+    <button data-jump="0" type="button">Tut</button>
+    <button data-jump="1" type="button">1</button>
+    <button data-jump="2" type="button">2</button>
+    <button data-jump="3" type="button">3</button>
+    <button data-jump="4" type="button">4</button>
+    <button data-jump="5" type="button">5</button>
+    <button data-jump="6" type="button">6</button>
+    <button data-jump="7" type="button">7</button>
+    <button data-jump="8" type="button">8</button>
+    <button data-jump="9" type="button">9+</button>
+    <button id="dbgWin" class="warn" type="button">Win 🎉</button>
+    <button id="dbgRestart" class="warn" type="button">↺ Restart</button>
   </div>
 </div>
 
@@ -1043,6 +1077,9 @@ class AudioManager {
         this.voices[k] = new Audio('audios/LBD 1/' + f);
         this.voices[k].volume = 1; this.voices[k].preload = 'auto';
       }
+      // Win-screen VO — lives in audios/ root, outside the LBD 1 pack.
+      this.voices.byteSaved = new Audio('audios/Byte Saved the Day.ogg');
+      this.voices.byteSaved.volume = 1; this.voices.byteSaved.preload = 'auto';
     }
     if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -2259,11 +2296,13 @@ class GameManager {
     this.ui.hideInstruction();
     playSound('win');
     $('#win').classList.add('show');   // reveal the PostLBD celebration splash
+    audio.playVoice('byteSaved');      // 🔊 "Byte saved the day!" — closing VO over the splash
     audio.playFile('confetti');        // 🔊 celebratory popper, fired with the confetti
     this.particles.confetti();         // 5s two-sided fireworks (canvas-confetti)
   }
 
   restart(){
+    audio.stopVoice();                 // cut the "Byte saved the day" line if NEXT is tapped mid-VO
     $('#win').classList.remove('show');
     this.pods.forEach(p => p.destroy()); this.pods = [];
     this.level = 0; this.busy = false; this.canTap = false;
@@ -2362,8 +2401,27 @@ window.addEventListener('load', () => {
     game.start();
   };
   playBtn.addEventListener('click', begin);
+
+  // ---- Debug screen-switcher --------------------------------------------------------------
+  // Press D (or load with ?debug=1) to toggle a bar that jumps straight to any screen —
+  // tutorial, any puzzle farm, the 9+ independent tier, the win splash, or a full restart —
+  // so every screen can be checked without playing through the whole game.
+  const debugBar = $('#debugBar');
+  const skipGate = () => {                 // dismiss the start gate if it's still up
+    if (!startScreen.classList.contains('hide')){
+      startScreen.classList.add('hide');
+      audio.resume(); audio.startTheme();  // the widget tap is the unlock gesture
+    }
+  };
+  debugBar.querySelectorAll('[data-jump]').forEach(b =>
+    b.addEventListener('click', () => { skipGate(); game.jumpToLevel(+b.dataset.jump); }));
+  $('#dbgWin').addEventListener('click', () => { skipGate(); game.win(); });
+  $('#dbgRestart').addEventListener('click', () => { skipGate(); game.restart(); });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'd' || e.key === 'D') debugBar.classList.toggle('show');
+  });
+  if (new URLSearchParams(location.search).has('debug')) debugBar.classList.add('show');
 });
 </script>
-<!-- screen debug overlay (dormant until you press D, or open with ?debug=1) -->
 </body>
 </html>
